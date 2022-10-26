@@ -73,6 +73,7 @@
   //STREAMS AND THEIR OBSERVERS
   let drag_ = undefined;
   let click_ = undefined;
+  let wheel_ = undefined;
 
   let updateContextfulObject = ([obj,context],upd,key) => [{...obj,[key]:upd(obj[key])},context]
   
