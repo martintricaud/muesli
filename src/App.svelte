@@ -79,7 +79,6 @@
   let shiftdown_ = undefined;
   let shiftup_ = undefined;
   let click_ = undefined;
-  let wheel_ = undefined;
   
   function wheel_handler(e){
     console.log(e.sustain.wheelDeltaY)
