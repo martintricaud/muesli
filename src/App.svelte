@@ -74,9 +74,12 @@
   let drag_ = undefined;
   let click_ = undefined;
   let wheel_ = undefined;
-
-  let updateContextfulObject = ([obj,context],upd,key) => [{...obj,[key]:upd(obj[key])},context]
   
+  function wheel_handler(val){
+    // let apply_wheel_delta = val.sustain.applyDelta(scale).x;
+    let update;
+    zoom_factor = U.clamp([0,1])(update(zoom_factor));
+  }
   function drag_handler(val) {
     let key = val.attack.target.dataset.id; //get the key of the target
     
@@ -87,13 +90,13 @@
 
       if(val.attack.target.classList.contains("range")){    
         let upd = U.compose(apply_delta,U.clamp(r_tracks[key]))
-        $r_data = updateContextfulObject($r_data,upd,key)
+        $r_data = U.updateContextfulObject($r_data,upd,key)
         $hr_axes_u32 = $hr_axes_f32[0];
       }
 
       if(val.attack.target.classList.contains("thumb")){
         let upd = U.batchCompose(apply_delta,U.clamp(r_tracks[key]),U.clamp(t_tracks[key]));
-        $t_data = updateContextfulObject($t_data,upd,key)
+        $t_data = U.updateContextfulObject($t_data,upd,key)
         $ht_axes_u32 = $ht_axes_f32[0];
       }
     }
@@ -105,19 +108,30 @@
       let apply_big_delta = a=>W.bigint_sum(a,g(val.sustain.delta.x));//compute a new update function by currying the functor with g
       let apply_bigint_clamp = a => W.bigint_clamp("0",MAX_H,a)
       let upd = U.batchCompose(apply_big_delta,apply_bigint_clamp)
+      let f = x=>x
       if(val.attack.target.id == 'h_r'){
-        $hr = upd($hr)
+        $hr = f(upd($hr))
         $hr_axes_f32[0] = $hr_axes_u32
       }
       if(val.attack.target.id == 'h_t'){     
-        $ht = upd($ht)
+        $ht = f(upd($ht))
         $ht_axes_f32[0] = $ht_axes_u32
       }
     }
   }
   
+  //force biguint to comply to locked values
+  function comply_to_locked_values(biguint){
+    let a = hilbert_adjunction(axisNames)(32)[0](biguint)
+    let updatewithlockedvalues //= locked.map(([key,bool])=>{return x => ?})
+    let b = U.updateObjectWithObject(updatewithlockedvalues)(a)
+    return hilbert_adjunction(axisNames)(32)[1](b)
+  }
+
   onMount(() => {
     drag_ = S.asr(S.hit(S.mousedown_.thru(S.intoXY), document), S.mousemovedelta_, S.mouseup_);
+    wheel_ = S.mousewheel_
+    wheel_.log();
     click_ = S.hit(S.mousedown_.thru(S.intoXY), document)
     drag_.thru((x) => x.onValue((val) => drag_handler(val)));
     // const h = new HydraRenderer({
