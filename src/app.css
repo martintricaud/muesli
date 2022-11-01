@@ -209,3 +209,16 @@ button:focus-visible {
   max-width:20px;
   /* background-color:rgba(0, 0, 0, 0.2); */
 }
+
+.stop-scrolling {
+  height: 100%;
+  overflow: hidden;
+}
+
+body{
+  overflow:hidden,
+
+}
+.scrollOn{
+  overflow:hidden
+}
