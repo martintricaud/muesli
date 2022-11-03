@@ -4,6 +4,7 @@
   import * as U from './lib/utils.js';
   import * as S from './lib/utils-streams.js';
   import {preset1, synth1} from './lib/data.js';
+  import {preset2, synth2} from './lib/data.js';
   import HydraRenderer from 'hydra-synth';
   import { wasm_functions as W} from './main.js';
 
@@ -12,8 +13,8 @@
   // BINDINGS FOR DOM ELEMENTS AND THEIR SIZES
   let hydra_canvas;
   let h;
-  let macro_w, track_w, range_w;
-  let zf = 0.8; //Zoom Factor
+  let iw, ih, macro_w, track_w, range_w, thumb_w = 5;
+  let zf = 0.6; //Zoom Factor
   let instruments = [
     // {"name": lock, "effect": target => }
     // the effect of an instrument is a mapping from the instrument's stream to a stream of update to be applied to the object's 
@@ -29,7 +30,10 @@
   //substrates have a behaviour (a function to update their state based on their previous state)
 
   //LOADING PARAMETER PRESETS
-  let data = preset1;
+  // let data = preset1;
+  let data = preset2;
+
+
 
   // DEFINING CONSTANTS
   let [MAX_H, MAX_A] = [W.max_hilbert(32,data.length), Math.pow(2, 32)]
@@ -38,10 +42,14 @@
   $: mapData = U.arr2objMapper(data)
   $: r_tracks = mapData(({k,m,M}) => [k,[m,M]])
   $: r_tracks_padded = mapData(({k,m,M}) => [k,[m+zf*(M-m)/2,M-zf*(M-m)/2]])
+  
+  let ax = data.map(a=>a.k)
+  
+  let foo_adjunction = [
+    // array => object
+    // object => array
+  ]
 
-  
-  let axisNames = data.map(a=>a.k)
-  
   // TWO WAY BINDINGS
   let hilbert_adjunction = (axes) => (bits) => [
     (h_index) => U.zipAsKeyVal(axes)(Float32Array.from(W.forward(h_index, bits, axes.length))),
@@ -54,23 +62,23 @@
   ];
 
   // RANGE SLIDERS
-  let [hr, hr_axes_u32] = sync(...hilbert_adjunction(axisNames)(32));
+  let [hr, hr_axes_u32] = sync(...hilbert_adjunction(ax)(32));
   let [hr_axes_f32, r_data] = sync(...remapping_adjunction);
   $hr = W.biguint_prod(0.5,MAX_H,100);
   $: locked_r = mapData(({k,r_lock})=>[k, r_lock])
   $: $hr_axes_f32 = [U.objUpdate_partial(locked_r)($hr_axes_u32), r_tracks_padded]; //convert hilbert axes values to f32]
-  $: t_tracks = U.obj2objZipper(U.zoom(r_tracks_padded)(zf))($r_data[0])(U.computeSubrange)
+  $: t_tracks = U.obj2objZipper(U.zoom(r_tracks)(zf))($r_data[0])(U.computeSubrange)
 
   // THUMB SLIDERS
-  let [ht, ht_axes_u32] = sync(...hilbert_adjunction(axisNames)(32));
+  let [ht, ht_axes_u32] = sync(...hilbert_adjunction(ax)(32));
   let [ht_axes_f32, t_data] = sync(...remapping_adjunction);
   $ht = W.biguint_prod(0.5,MAX_H,100);
   $: locked_t = mapData(x=>[x.k, x.t_lock])
   $: $ht_axes_f32 = [U.objUpdate_partial(locked_t)($ht_axes_u32), t_tracks]; 
 
   // RENDERING TO THE DOM
-  $: r_render = k => U.lerp_AB(r_tracks_padded[k])([0+zf*track_w/2,track_w-zf*track_w/2])($r_data[0][k])
-  $: t_render = k => U.lerp_AB(t_tracks[k])([0,range_w])($t_data[0][k])
+  $: r_render = k => U.lerp_AB(r_tracks[k])([0,track_w])($r_data[0][k])
+  $: t_render = k => U.lerp_AB(r_tracks[k])([0,track_w])($t_data[0][k])
   $: hr_render = W.rescale_index($hr,32,data.length)
   $: ht_render = W.rescale_index($ht,32,data.length)
   
@@ -79,37 +87,33 @@
   let shiftdown_ = undefined;
   let shiftup_ = undefined;
   let click_ = undefined;
-  
-  function wheel_handler(e){
-    console.log(e.sustain.wheelDeltaY)
-    }
-    // // let apply_wheel_delta = val.sustain.applyDelta(scale).x;
-    // let update;
-    // zf = U.clamp([0,1])(update(zf));
-  
-  
-  // //if we have a dun
-  // let comply = (update)=>(adjunction) =>(val) =>  {
-  //   return adjunction[1](update(adjunction[0](val)))
-  // }
+  let wheel_ = undefined;
 
-  // let r_comply = comply()
-
-   //force biguint to comply to locked values
-  function r_comply_to_locked_values(biguint){
-    let a = hilbert_adjunction(axisNames)(32)[0](biguint)
-    let updatewithlockedvalues = U.objUpdate_partial(mapData(x=>[x.k, x.r_lock]));
-    let b = updatewithlockedvalues(a)
-    return hilbert_adjunction(axisNames)(32)[1](b)
+  let galois_pullBack = (adj)=>(f)=>(val)=>adj[1](f(adj[0](val)))  
+  
+  let comply = (slave) => (master) => {
+    let a = hilbert_adjunction(ax)(32)[0](slave)
+    let f = U.objUpdate_partial(mapData(a=>[a.k, a[master]]));
+    return hilbert_adjunction(ax)(32)[1](f(a))
   }
 
-  function t_comply_to_locked_values(biguint){
-    let a = hilbert_adjunction(axisNames)(32)[0](biguint)
-    let updatewithlockedvalues = Object.fromEntries(data.map(x=>[x.k, x.t_lock]));
-    let b = U.objUpdate_partial(updatewithlockedvalues)(a)
-    return hilbert_adjunction(axisNames)(32)[1](b)
+  function wheel_handler(val){
+    zf = U.clamp([0,1])(zf + U.scale([0, ih])([0,1])(val.sustain.wheelDeltaY)) 
   }
 
+  function click_handler(val){
+    let target = val.target.dataset.id
+      console.log(target)
+    // if(val.instrument == 'lock'){
+      
+    //   // let lockTarget =  target => targetItem => val => {let res = cible; cible[lock] = x=>val }
+    //   // target = update(target)
+    // }
+  }
+  function instrument_lock(val, instrument){
+    let effect = instrument.effect //which is a function that maps a transformation of the instrument to a transformation of the substrate
+    
+  }
   function drag_handler(val) {
     let k = val.attack.target.dataset.id; //get the key of the target
     
@@ -138,41 +142,16 @@
       let apply_bigint_clamp = a => W.bigint_clamp("0",MAX_H,a)
       let upd = U.batchCompose(apply_big_delta,apply_bigint_clamp)
       if(val.attack.target.id == 'h_r'){
-        $hr = r_comply_to_locked_values(upd($hr))
+        // $hr = r_comply_to_locked_values(upd($hr))
+        $hr = comply(upd($hr))("r_lock")
         $hr_axes_f32[0] = $hr_axes_u32
       }
       if(val.attack.target.id == 'h_t'){     
-        $ht = t_comply_to_locked_values(upd($ht))
+        $ht = comply(upd($ht))("t_lock")
         $ht_axes_f32[0] = $ht_axes_u32
       }
     }
   }
-
-  $: [A,B,C] = [$t_data[0]["ro1a"],$t_data[0]["os1f"],0.58]
-
-  $: ms =  ([a,b,c])=>x=>()=> x.osc(9.634, -0.233, 9.634).color(-1.358, -2.921, -2.967).blend(x.o0)
-    .rotate(-0.486, -0.269).modulate(x.shape(()=>a).rotate(b, c).scale(3.054)
-    .repeatX(1.896, 2.632).modulate(x.o0, 237)
-    .repeatY(2.093, 2.059)).out(x.o0);
-
-    afterUpdate(() => {
-      h = new HydraRenderer({
-      makeGlobal: false,
-      detectAudio: false,
-      canvas: hydra_canvas,
-      precision: 'lowp',
-    }).synth;
-      return ms([A,B,C])(h)()
-    });
-
-  // $: mysynth = ([a,b,c])=>x=>()=>x.shape(a).rotate(b, c).scale(3.054)
-  //   .repeatX(1.896, 2.632).modulate(x.o0, 237)
-  //   .repeatY(2.093, 2.059)
-    // h.osc(9.634, -0.233, 0.782).color(-1.358, -2.921, -2.967).blend(h.o0)
-    // .rotate(-0.486, -0.269).modulate(h.shape(7.614).rotate(0.957, 0.58).scale(3.054)
-    // .repeatX(1.896, 2.632).modulate(h.o0, 237)
-    // .repeatY(2.093, 2.059)).out(h.o0);
-   
 
   onMount(() => {
     drag_ = S.asr(S.hit(S.mousedown_.thru(S.intoXY), document), S.mousemovedelta_, S.mouseup_);
@@ -181,31 +160,32 @@
     shiftup_ = S.shiftup_.thru((x) => x.onValue((val) => document.body.style.setProperty("overflow","scroll")))
     wheel_ = S.asr(S.hold(shiftdown_),S.mousewheel_,shiftup_)
     wheel_.thru((x) => x.onValue((val) => wheel_handler(val)));
-    click_ = S.hit(S.mousedown_.thru(S.intoXY), document)
-    
- 
-   
-    // h = new HydraRenderer({
-    //   makeGlobal: false,
-    //   detectAudio: false,
-    //   // canvas: hydra_canvas,
-    //   precision: 'lowp',
-    // }).synth;
+    // click_ = S.hit(S.mousedown_.thru(S.intoXY), document)
+    // click_ = S.mousedown_.thru((x) => x.onValue((val) => console.log(val)))
+    click_ = S.hit2(S.mousedown_, document).thru((x) => x.onValue((val) => click_handler(val)))
 
-    // ms([A,B,C])(h)()
+    h = new HydraRenderer({
+      makeGlobal: false,
+      autoLoop: true,
+      detectAudio: false,
+      canvas: hydra_canvas,
+      precision: 'highp',
+    }).synth;
+  });
 
-   
-    // h.osc(9.634, -0.233, 0.782).color(-1.358, -2.921, -2.967).blend(h.o0)
-    // .rotate(-0.486, -0.269).modulate(mysynth([A,B,C])(h)()).out(h.o0);
-
+  afterUpdate(() => {
+    return synth2($t_data[0])(h)
   });
 </script>
-<!-- <svelte:window bind:scrollY={zf} /> -->
+
+<svelte:window bind:innerWidth={iw} bind:innerHeight={ih}/>
 <main>
   <div class="menu">
     <div class="instrument-palette"> 
       <button class="instrument">lock</button>
       <button class="instrument">delete</button>
+      <button class="instrument">save</button>
+      <button class="instrument">load</button>
     </div>
   </div>
   <!-- <div class="menu">
@@ -216,12 +196,12 @@
       <div class="sliders" id="macro-sliders">
         <div class="slider macro-slider">
           <div class="track" bind:clientWidth={macro_w}>
-            <div id="h_r" class="macro-thumb" style="left:{hr_render*macro_w}px" />
+            <div id="h_r" class="macro-thumb" style="left:{hr_render*macro_w}px; width:{thumb_w}px" />
           </div>
         </div>
         <div class="slider macro-slider">
           <div class="track">
-            <div id="h_t" class="macro-thumb" style="left:{ht_render*macro_w}px"/>
+            <div id="h_t" class="macro-thumb" style="left:{ht_render*macro_w}px; width:{thumb_w}px"/>
           </div>
         </div>
       </div>
@@ -243,12 +223,14 @@
                 bind:clientWidth={range_w}
               />
               <!-- The slider's thumb position is computed by remapping its data to the dimensions of its parent widget -->
-            <div
-              data-id={k}
-              id={k + 'thumb'}
-              class="thumb slider"
-              style="left:{r_render(k)+t_render(k)-(zf * track_w)/2}px"
-            />
+              <!-- r_render(k)+t_render(k)-(zf * track_w)/2 -->
+              <div
+                data-id={k}
+                id={k + 'thumb'}
+                class="thumb slider"
+                style="left:{t_render(k)-thumb_w/2}px; width:{thumb_w}px"
+                bind:clientWidth={thumb_w}
+              />
             </div>
             <input type="number" class="bound" bind:value={M} />
           </div>

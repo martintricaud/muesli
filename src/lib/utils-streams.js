@@ -8,6 +8,14 @@ xy_.flatMap((xy) =>
   })
 );
 
+export const hit2= (mouse_, viewport) =>
+mouse_.flatMap(({clientX, clientY}) =>
+  Kefir.constant({
+    start: [clientX, clientY],
+    target: viewport.elementFromPoint(clientX, clientY),
+  })
+);
+
 export const hold = (e_) =>
 e_.flatMap((e) =>
   Kefir.constant(e)
