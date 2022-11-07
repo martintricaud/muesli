@@ -82,7 +82,7 @@
   $: $ht_axes_f32 = [U.objUpdate_partial(locked_t)($ht_axes_u32), t_tracks]; 
 
   // RENDERING TO THE DOM
-  $: r_render = k => U.lerp_AB(r_tracks[k])([0,track_w])($r_data[0][k])
+  $: r_render = k => U.lerp_AB(r_tracks[k])([0,track_w])(locked_r[k]($r_data[0][k]))
   $: t_render = k => U.lerp_AB(r_tracks[k])([0,track_w])($t_data[0][k])
   $: hr_render = W.rescale_index($hr,32,data.length)
   $: ht_render = W.rescale_index($ht,32,data.length)
