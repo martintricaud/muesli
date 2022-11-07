@@ -15,6 +15,23 @@ export const preset1 = [
     {k:"re2o",m:-1000, M:1000, r_lock: x=>x, t_lock: x=>x}, //repeat offset, float
 ];
 
+export const preset1bis = [
+    ["os1f",  { m:0, M:1000, r_lock: x=>x, t_lock: x=>x}], //freq, float, no right bound
+    ["os1o",  { m:0, M:10, r_lock: x=>x, t_lock: x=>x}], //offset
+    ["co1r",  { m:0, M:100, r_lock: x=>x, t_lock: x=>x}], //red, int
+    ["co1g",  {m:0, M:100, r_lock: x=>x, t_lock: x=>x}], //green, int
+    ["co1b",  {m:0, M:100, r_lock: x=>x, t_lock: x=>x}], //blue, int
+    ["ro1a",  {m:0, M:2 * Math.PI, r_lock: x=>x, t_lock: x=>x}], //rotation angle
+    ["sh10",  {m:0, M:5, r_lock: x=>x, t_lock: x=>x}],
+    ["ro2a",  {m:0, M:2 * Math.PI, r_lock: x=>x, t_lock: x=>x}], //rotation angle
+    ["mo10",  {m:0, M:1000, r_lock: x=>x, t_lock: x=>x}], //rotation angle
+    ["sc10",  {m:-0.5, M:10, r_lock: x=>x, t_lock: x=>x}], //scale
+    ["re1r",  {m:0, M:1000, r_lock: x=>x, t_lock: x=>x}], //repeat reps, float
+    ["re1o",  {m:-1000, M:1000, r_lock: x=>x, t_lock: x=>x}], //repeat offset, float
+    ["re2r",  {m:0, M:1000, r_lock: x=>x, t_lock: x=>x}], //repeat reps, float
+    ["re2o",  {m:-1000, M:1000, r_lock: x=>x, t_lock: x=>x}], //repeat offset, float
+];
+
 export const synth1 = (a)=>x=> 
 x.osc(a.os1f, 1/a.os1f, a.os1o)
 .color(a.co1r, a.co1g, a.co1b)

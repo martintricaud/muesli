@@ -733,15 +733,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"hydra-synth@npm:^1.3.18":
-  version: 1.3.18
-  resolution: "hydra-synth@npm:1.3.18"
+"hydra-synth@npm:^1.3.22":
+  version: 1.3.24
+  resolution: "hydra-synth@npm:1.3.24"
   dependencies:
     meyda: ^5.5.1
     raf-loop: ^1.1.3
     regl: ^1.3.9
-    web-audio-analyser: ^2.0.1
-  checksum: 4a08bf37b05dd85fbdada3059542d4077f1615bc684c6a1a5fe8d76685dd49ba1d9da850a28af6af3b22c8a24e505d836bd9c7bb4bac364acb96b7fd1901d3b5
+  checksum: 387af73eb4d05ffc93e7665e3ebfa2654898930f67a642282e9df5879e10b773b90b947eb1a226f218fa5da1c0c0a5c157af05616862c4578d8b4dcdd9a2da6b
   languageName: node
   linkType: hard
 
@@ -1036,8 +1035,9 @@ __metadata:
   resolution: "muesli@workspace:."
   dependencies:
     "@sveltejs/vite-plugin-svelte": ^1.0.2
-    hydra-synth: ^1.3.18
+    hydra-synth: ^1.3.22
     kefir: ^3.8.8
+    ramda: ^0.28.0
     svelte: ^3.49.0
     typescript: ^4.8.4
     vite: ^3.1.0
@@ -1209,6 +1209,13 @@ __metadata:
   dependencies:
     performance-now: ^2.1.0
   checksum: 50ba284e481c8185dbcf45fc4618ba3aec580bb50c9121385d5698cb6012fe516d2015b1df6dd407a7b7c58d44be8086108236affbce1861edd6b44637c8cd52
+  languageName: node
+  linkType: hard
+
+"ramda@npm:^0.28.0":
+  version: 0.28.0
+  resolution: "ramda@npm:0.28.0"
+  checksum: 44ea6e5010bba70151b6a92d8114a91915e8b5a16105cce65fae58c9d7386b812c429645e35f21141d7087568550ce383bc10ee1a65cdec951f4b69ea457e6a4
   languageName: node
   linkType: hard
 
@@ -1566,13 +1573,6 @@ __metadata:
     readable-stream: ^1.1.14
     stream-parser: ^0.3.1
   checksum: 2c181cb1d06bc2df3fc811b67753643950ed2607093c476fbd8274ce6e69776273b152479cb4ba0ba90e21eecdbb6fa4c800249c7a83028f36cb66da58e1cf8a
-  languageName: node
-  linkType: hard
-
-"web-audio-analyser@npm:^2.0.1":
-  version: 2.0.1
-  resolution: "web-audio-analyser@npm:2.0.1"
-  checksum: 9bf0e66787787210f1b13c1095c89227d572b5bdce8546c7c39c5a30596a42b409f5e981dbb401eb58ae1d46a5f2e104b1459e9b03bb30682243424c9d0da6bb
   languageName: node
   linkType: hard
 

@@ -3,10 +3,11 @@
   import { sync } from './lib/stores.js';
   import * as U from './lib/utils.js';
   import * as S from './lib/utils-streams.js';
-  import {preset1, synth1} from './lib/data.js';
+  import {preset1, synth1, preset1bis} from './lib/data.js';
   import {preset2, synth2} from './lib/data.js';
-  import HydraRenderer from 'hydra-synth';
+  // import HydraRenderer from 'hydra-synth';
   import { wasm_functions as W} from './main.js';
+  import * as R from 'ramda'
 
   // NOTATIONS
  
@@ -32,6 +33,7 @@
   //LOADING PARAMETER PRESETS
   // let data = preset1;
   let data = preset2;
+  let dataObj = R.fromPairs(data);
 
 
 
@@ -41,6 +43,7 @@
   // $: r_tracks = Object.fromEntries(data.map(a => [a.key,[a.min,a.max]]))
   $: mapData = U.arr2objMapper(data)
   $: r_tracks = mapData(({k,m,M}) => [k,[m,M]])
+  //$: r_tracks = R.map(k=>[k.m,k.M],dataObj)
   $: r_tracks_padded = mapData(({k,m,M}) => [k,[m+zf*(M-m)/2,M-zf*(M-m)/2]])
   
   let ax = data.map(a=>a.k)
@@ -164,18 +167,18 @@
     // click_ = S.mousedown_.thru((x) => x.onValue((val) => console.log(val)))
     click_ = S.hit2(S.mousedown_, document).thru((x) => x.onValue((val) => click_handler(val)))
 
-    h = new HydraRenderer({
-      makeGlobal: false,
-      autoLoop: true,
-      detectAudio: false,
-      canvas: hydra_canvas,
-      precision: 'highp',
-    }).synth;
-  });
+  //   h = new HydraRenderer({
+  //     makeGlobal: false,
+  //     autoLoop: true,
+  //     detectAudio: false,
+  //     canvas: hydra_canvas,
+  //     precision: 'highp',
+  //   }).synth;
+   });
 
-  afterUpdate(() => {
-    return synth2($t_data[0])(h)
-  });
+  // afterUpdate(() => {
+  //   return synth2($t_data[0])(h)
+  // });
 </script>
 
 <svelte:window bind:innerWidth={iw} bind:innerHeight={ih}/>
