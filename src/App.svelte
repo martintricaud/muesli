@@ -1,11 +1,10 @@
 <script>
 	//import { scale } from './lib/utils2.ts';
   import { onMount, afterUpdate } from 'svelte';
-  import { sync, nestedStore, A_below_B, random_adjunction} from './lib/stores.js';
+  import { sync, nestedStore, A_below_B, random_adjunction, paramStore} from './lib/stores.js';
   import * as U from './lib/utils.js';
   import * as S from './lib/utils-streams.js';
   import {shiftdown_,shiftup_,mouseup_, mousedown_, mousemove_, mouseleave_, asr} from './lib/utils-streams.js';
-
   import { synth2, preset2 } from './lib/data.js';
   import { wasm_functions as W } from './main.js';
   import * as R from 'ramda';
@@ -14,7 +13,7 @@
   import InfoBox from './lib/InfoBox.svelte';
   import * as K from 'kefir';
   import {prng_alea} from 'esm-seedrandom';
-    import Test from './lib/Test.svelte';
+  import Test from './lib/Test.svelte';
 
   // SHORTHANDS
   let f32a = Float32Array;
@@ -96,7 +95,7 @@ function applyUpdate(_sandbox, update, path){
     ([scaled_coordinates, ctx]) => [U.o2o(ctx)(scaled_coordinates)(U.lerp_BA([0, MAX_A])),ctx]
   ];
 
-
+  let testStore = paramStore(3,4,4,0,10,0.2);
   let [Aya,[Na,Ka],Mura] = nestedStore([x=>x/2,x=>x*2],A_below_B(2,4,0),[x=>x/2,x=>x*2])
   $Aya = 8;
   let [hr, hrX] = sync(...hilbert_adjunction(ax,32))
@@ -149,15 +148,6 @@ function applyUpdate(_sandbox, update, path){
   let drag_, cursorInfo_,click_,wheel_, move_, pool_, pool2_, counterPlus_
    drag_  = cursorInfo_ = click_ = counterPlus_ = wheel_ = move_ = pool_ = pool2_ = undefined
 
-
-  function equip(name){
-    instruments = R.mapObjIndexed(
-    (x,k) => k == name ? R.modify("active",a=>!a,x) : R.modify("active",a=>false,x),
-    instruments)
-    activeInstrument = R.keys(R.pickBy((x,key)=>x.active, instruments))[0]
-  }
-
-    
   //object version
   function remove1(removeA,fromB){
     fromB = R.omit([removeA],fromB)
@@ -179,6 +169,13 @@ function applyUpdate(_sandbox, update, path){
     }, presets)
 }
 
+  function move_feedback(e){
+    instruments[activeInstrument]["ev"] = e;
+  }
+  function drag_feedback(e){
+    instruments[activeInstrument]["ev"] = e;
+  }
+
   function handleClick(lock, k) {
     // if (instruments[0].active) {  
     //   let val
@@ -197,6 +194,14 @@ function applyUpdate(_sandbox, update, path){
   }
 
 
+  // EFFECTFUL FUNCTIONS - modify reactive values, can be thought of has handlers
+
+  function equip_effect(name){
+    instruments = R.mapObjIndexed(
+    (x,k) => k == name ? R.modify("active",a=>!a,x) : R.modify("active",a=>false,x),
+    instruments)
+    activeInstrument = R.keys(R.pickBy((x,key)=>x.active, instruments))[0]
+  }
 
   function drag_effect({atk, sus}) {
     let k = atk.target.dataset.id; //get the key of the target
@@ -231,13 +236,6 @@ function applyUpdate(_sandbox, update, path){
         $htX_f = R.assoc([0],$htX, $htX_f);
       }
     }
-  }
-
-  function move_feedback(e){
-    instruments[activeInstrument]["ev"] = e;
-  }
-  function drag_feedback(e){
-    instruments[activeInstrument]["ev"] = e;
   }
 
   function shiftdown_effect(val){
@@ -289,7 +287,7 @@ function applyUpdate(_sandbox, update, path){
    
     <div class="instrument-palette">
       {#each Object.entries(instruments) as [name, {active,component,color,ev}]}
-      <button class:active="{active}" on:click={()=>equip(name)}>{name}</button>
+      <button class:active="{active}" on:click={()=>equip_effect(name)}>{name}</button>
       <!-- style="position: fixed;left:{ev.x+1}px; top:{ev.y+1}px" -->
       <!-- <div id="ctr" style="position:fixed; width:0; height:0; z-index:100" class="container" class:inactive="{!active}">
         <svelte:component this={instruments[name].component} {ev} {ih} {iw}>
@@ -354,8 +352,7 @@ function applyUpdate(_sandbox, update, path){
                   left:{r_render(k) - (zf * track_w) / 2}px;"
                 bind:clientWidth={range_w}
                 on:click={()=>handleClick('Lr', k)}
-              />
-                
+              />  
               <div class="middle" data-id={k} style="width:{2}px;
                 left:{r_render(k) - 1}px;"/>
               <div
@@ -388,6 +385,33 @@ function applyUpdate(_sandbox, update, path){
       </div>
       <input bind:value={$Mura} type=number />
     </div> -->
+    <div style="display: flex; flex-direction: row; column-gap: 10px">
+      <div style="display: flex; flex-direction: column">  
+        <button on:click={()=>testStore.update({c0:x=>x-0.01})}>-</button>
+          c0: {$testStore.c0}
+        <button on:click={()=>testStore.update({c0:x=>x+0.01})}>+</button>
+      </div>
+      <div style="display: flex; flex-direction: column">  
+        <button on:click={()=>testStore.update({a:x=>x-0.01})}>-</button>
+          a: {$testStore.a}
+        <button on:click={()=>testStore.update({a:x=>x+0.01})}>+</button>
+      </div>
+      <div style="display: flex; flex-direction: column">  
+        <button on:click={()=>testStore.update({z:x=>x-0.01})}>-</button>
+          z: {$testStore.z}
+        <button on:click={()=>testStore.update({z:x=>x+0.01})}>+</button>
+      </div>
+      <div style="display: flex; flex-direction: column">  
+        <button on:click={()=>testStore.update({b:x=>x-0.01})}>-</button>
+          b: {$testStore.b}
+        <button on:click={()=>testStore.update({b:x=>x+0.01})}>+</button>
+      </div>
+      <div style="display: flex; flex-direction: column">  
+        <button on:click={()=>testStore.update({c1:x=>x-0.01})}>-</button>
+          c1: {$testStore.c1}
+        <button on:click={()=>testStore.update({c1:x=>x+0.01})}>+</button>
+      </div>
+    </div>
     <div class="viewport" >
       <!-- <HydraViewer synth={synth2} data={$t_data[0]} w={1200} h={1000}/> -->
     </div>

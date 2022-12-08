@@ -33,10 +33,10 @@
 </script>
 
 <canvas 
-      bind:this={hydracanvas}
-      width={w}
-      height={h}
-      style="width:{w/2}px; height:100vh; position:relative; top:0; left:0" />
+    bind:this={hydracanvas}
+    width={w}
+    height={h}
+    style="width:{w/2}px; height:100vh; position:relative; top:0; left:0" />
 
 <style>
 	canvas {

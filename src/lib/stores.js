@@ -179,97 +179,57 @@ function willStayBetween(target,[m,M]){
 	return willStayUnder(m,target[0]) && willStayUnder(R.last(target),M)
 }
 
-export function paramStore(epsilon){
-	const [A,B,Z,C0,C1] = [writable(),writable(),writable(),writable(),writable(),writable()]
-	/*
-		these variables represent a value A contained within a range of width Z centered on B which is itself contained in a range C0 C1
-		upon updating or setting any of these variables, different behaviours are possible.
-		Some have been hardcoded but can be turned into parameters if need be.
-	*/
-	let ZboundedByC0C1 //if true, this means that Z will try to preserve its value upon updates of C0 and C1, and will only shrink when it has no more room
+export function paramStore(A,Z,B,C0,C1,epsilon){
+	const obj = writable({a:A, z:Z, b:B, c0:C0, c1:C1});
+
+	let ZboundedByC0C1 = true//if true, this means that Z will try to preserve its value upon updates of C0 and C1, and will only shrink when it has no more room
 	let ZscalesWithC0C1 //if true, this means that Z ill preserve its relative size compared to C0 and C1
-	let BboundedByC0C1 //if true this means that B will try to preserve its value upon updates of C0 and C1, and will only move if it's the only way to preserve a padding of Z/2 from each bound
+	let BboundedByC0C1 = true//if true this means that B will try to preserve its value upon updates of C0 and C1, and will only move if it's the only way to preserve a padding of Z/2 from each bound
 	let BscalesWithC0C1 //if true, B will try to preserve its relative value compared to C0 and C1
-	let A_C0strongerThanA_B //if true A will not follow updates to B 
-	let id = R.identity
 
 	// on attempts to update the store with an array of functions, the solve function will compute amended versions of the functions in the array in order to respect the constraints
-	function solve([fa,fz,fb,fc0,fc1]){
+	function solve(u){
+		//u is an object of the same shape as obj containing functions. if some fields of u are unspecified it means the 
+		let [fa,fz,fb,fc0,fc1] = R.map(x=> x==undefined ? R.identity : x, R.props(["a","z","b","c0","c1"],u))
+		let [va,vz,vb,vc0,vc1] = R.props(["a","z","b","c0","c1"],get(obj))
 		//updates on c1 and c0 have priority over everything else
 		//if updates on c1 and c0 lead to a distance smaller than epsilon, the burden of clamping is equally shared.
 		//that means c1 is updated to half the available distance and c0 same
-		let [Fc0,Fc1] = 
-			willStayUnder(epsilon,fc1(get(C1))-fc0(get(C0))) ? 
-			[Fc0,Fc1] :
-			[x=>fc1(x-epsilon/2)-epsilon/2, x=>fc0(x+epsilon/2)+epsilon/2]
-		let Fz, Fb
+		let [Fc0,Fc1] = willStayUnder(epsilon,fc1(vc1)-fc0(vc0)) ? [fc0,fc1] : [x=>fc1(x-epsilon/2)-epsilon/2, x=>fc0(x+epsilon/2)+epsilon/2]
+		let growthOfC = (Fc1(vc1) - Fc0(vc0))/(vc1-vc0)
+		let scaleWithC = x => (x-vc0)*growthOfC+Fc0(vc0)
 		
+		let Fz, Fb, Fa
 		//Update of Z have priority over updates of B, so they are computed first.
-		if(ZboundedByC0C1){
-			Fz = fz(get(Z)) < Fc1(get(C1)) - Fc0(get(C0)) ? x=>fz(x) : x => Fc1(get(C1)) - Fc0(get(C0))
-		}
+
+		if(ZboundedByC0C1){ Fz = fz(vz) < Fc1(vc1) - Fc0(vc0) ? fz : x => Fc1(vc1) - Fc0(vc0) }
 		else if(ZscalesWithC0C1){
-			let growthOfC = (Fc1(get(C1)) - Fc0(get(C0)))/(get(C1)-get(C0))
-			let growthOfZ = fz(get(Z))/get(Z)
-			let growZ = x=>growthOfZ*growthOfC*x
-			let clampToC0C1 = x => R.clamp(0, Fc1(get(C1)) - Fc0(get(C0)),x)
-			Fz = x => clampToC0C1(growZ(x))
+			let growthOfZ = fz(vz)/vz
+			let clampToC0C1 = x => R.clamp(0, Fc1(vc1) - Fc0(vc0),x)
+			Fz = x => clampToC0C1(growthOfZ*growthOfC*x)
 		}
 
-		let newBounds = [Fc0(get(C0))+Fz(get(Z))/2,Fc1(get(C1))-Fz(get(Z))/2]
-
-		//
-		if(BboundedByC0C1){
-			Fb = 
-				willStayBetween(fb(get(B)),newBounds) ?
-				fb : 
-				x=>R.clamp(...newBounds,fb(x))
-		}
-		else if(BscalesWithC0C1){
-			let growthOfC = (Fc1(get(C1)) - Fc0(get(C0)))/(get(C1)-get(C0))
-			let scaleBwithC = x => (x-get(C0))*growthOfC+Fc0(get(C0))
-			Fb = x => R.clamp(...newBounds,fb(scaleBwithC(x)))
-		}
+		let boundsOfB = [Fc0(vc0)+Fz(vz)/2,Fc1(vc1)-Fz(vz)/2]
+		if(BboundedByC0C1){ Fb = willStayBetween(fb(vb),boundsOfB) ? fb : x=>R.clamp(...boundsOfB,fb(x)) }
+		else if(BscalesWithC0C1){ Fb = x => R.clamp(...boundsOfB,fb(scaleWithC(x))) }
 		
-		//several clamping modes:
-
-		//choice made: A_C0 is stronger than A_B
-		//what happens if C0C1 changes? If Z scales with C: fa remains what it is as long as it can; if Z doesn't: same thing
-		//ok so in any case 
-		let Fa
-		if(A_C0strongerThanA_B){
-			Fa = 
-			willStayBetween(fa(get(A)),[Fb(get(B))-Fz(get(Z))/2,Fb(get(B))+Fz(get(Z))/2]) ?
-			fa :
-			x => R.clamp(Fb(get(B))-Fz(get(Z))/2,Fb(get(B))+Fz(get(Z))/2,fa(x))
-		}
+		//choice made: A's absolute position will be preserved as much as possible
+		let boundsOfA = [Fb(vb)-Fz(vz)/2,Fb(vb)+Fz(vz)/2]
+		Fa = willStayBetween(fa(va),boundsOfA) ? fa : x => R.clamp(...boundsOfA,fa(x))
 		
-		return [Fa,Fz,Fb,Fc0,Fc1]
+		return {a: Fa, z: Fz, b: Fb, c0: Fc0, c1:Fc1}
 	}
 
-	function u([Fa,Fz,Fb,Fc0,Fc1]){
-		A.update(Fa)
-		B.update(Fb)
-		Z.update(Fz)
-		C0.update(Fc0)
-		C1.update(Fc1)
-
+	function setWith(valueObj){
+		let u = R.map(val=>function(x){return val},valueObj)
+		updateWith(u)
 	}
-	
-	const [set_a,set_b,set_z,set_c0,set_c1] = [
-		$a0=>{u(solve([x=>$a0,id,id,id,id,id]))}, 
-		$z=>{u(solve([id,x=>$z,id,id,id]))}, 
-		$b=>{u(solve([id,id,x=>$b,id,id]))},
-		$c0=>{u(solve([id,id,id,x=>$c0,id]))}, 
-		$c1=>{u(solve([id,id,id,id,id,x=>$c1]))}
-	]
 
-	return [
-		{ subscribe: A.subscribe, set: set_A, update: update_A },
-		{ subscribe: B.subscribe, set: set_B, update: update_B },
+	function updateWith(updateObj){
+		obj.update(prev=>R.mergeWith((v,f)=>f(v),prev,solve(updateObj)))
+	}
 
-	]
-	
-	
+	return { subscribe: obj.subscribe, set: setWith, update: updateWith}
+
 }
 

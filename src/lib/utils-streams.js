@@ -48,6 +48,8 @@ export const shiftup_ = Kefir.fromEvents(window, 'keyup')
 export const mousemove_ = Kefir.fromEvents(window, 'mousemove');
 export const mousewheel_= Kefir.fromEvents(window,'wheel');
 
+
+
 export const applyDelta = (xy)=>{
   let b = g=>{return {x:val=>val+g(xy.movementX),  y:val=>val+g(xy.movementY)}}
   let a = {...xy, applyDelta:b}
