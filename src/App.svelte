@@ -1,265 +1,416 @@
 <script>
+	//import { scale } from './lib/utils2.ts';
   import { onMount, afterUpdate } from 'svelte';
-  import { sync } from './lib/stores.js';
+  import { sync, nestedStore, A_below_B, random_adjunction} from './lib/stores.js';
   import * as U from './lib/utils.js';
   import * as S from './lib/utils-streams.js';
-  import {preset1, synth1, preset1bis} from './lib/data.js';
-  import {preset2, synth2} from './lib/data.js';
-  // import HydraRenderer from 'hydra-synth';
-  import { wasm_functions as W} from './main.js';
-  import * as R from 'ramda'
+  import {shiftdown_,shiftup_,mouseup_, mousedown_, mousemove_, mouseleave_, asr} from './lib/utils-streams.js';
 
-  // NOTATIONS
- 
+  import { synth2, preset2 } from './lib/data.js';
+  import { wasm_functions as W } from './main.js';
+  import * as R from 'ramda';
+  import HydraViewer from './lib/HydraViewer.svelte';
+  import GrabFeedback from './lib/GrabFeedback.svelte';
+  import InfoBox from './lib/InfoBox.svelte';
+  import * as K from 'kefir';
+  import {prng_alea} from 'esm-seedrandom';
+    import Test from './lib/Test.svelte';
+
+  // SHORTHANDS
+  let f32a = Float32Array;
+  let u32a = Uint32Array;
+
   // BINDINGS FOR DOM ELEMENTS AND THEIR SIZES
-  let hydra_canvas;
-  let h;
-  let iw, ih, macro_w, track_w, range_w, thumb_w = 5;
-  let zf = 0.6; //Zoom Factor
-  let instruments = [
-      {name: "lock", active: false},
-      {name: "delete", active: false},
-      {name: "save", active: false},
-      {name: "load", active: false},
-      // the effect of an instrument is a mapping from the instrument's stream to a stream of update to be applied to the object's 
-    ]; 
 
-  //instrument = source: sourceType => target:targetType => {
-    // let e = effect(sourceType,targetType)
-    // 
-  //}
+  let currentPreset = preset2
+  let presets = [];
 
-  //substrates have a response function ("how much" of the instrument's instructions are actually applied to the substrate)
-  //substrates have a behaviour (a function to update their state based on their previous state)
+  let [MAX_H, MAX_A] = [W.max_hilbert(32, currentPreset.length), Math.pow(2, 32)-1];
+  let iw,ih, macro_w, track_w, range_w, thumb_w = 5;
+  let zf = 0.2; //Zoom Factor
+
+  let instruments = {
+    hold:{ active: false, component:InfoBox,ev:{x:0} },
+    pin:{ active: false, component:InfoBox,ev:{x:0}},
+    eraser:{ active: false,  component:InfoBox,ev:{x:0}},
+    grab:{ active: false, component:GrabFeedback,ev:{x:null}},
+    none:{ active: true, component:InfoBox,ev:{x:0}},
+  }
+  $: activeInstrument = R.keys(R.pickBy((x,key)=>x.active, instruments))[0];
+  //UTILITIES
+
+let nameAs = name => x=>R.assoc(name,x,{m:0,M:MAX_A})
+
+let lerp = (A,B)=>x=>U.scale(A,B)(x)  + B[0]
+
+function plus(a,b){
+  if(typeof a === "number"){
+    return a+b
+  } else return W.bigint_sum(a,b)
+}
+
+function add(b){
+  return a => plus(a,b)
+}
 
   //LOADING PARAMETER PRESETS
-  // let data = preset1;
-  let data = preset2;
-  let dataObj = R.fromPairs(data);
-
+  let ax = currentPreset.map((a) => a[0]);
+  let data = R.fromPairs(currentPreset);
 
 
   // DEFINING CONSTANTS
-  let [MAX_H, MAX_A] = [W.max_hilbert(32,data.length), Math.pow(2, 32)]
+  const mM = x=>R.props(['m','M'],x)
+  const v =  x=>R.props(['v'],x)
+  const L = x=>R.props(['locked'],x)
 
-  // $: r_tracks = Object.fromEntries(data.map(a => [a.key,[a.min,a.max]]))
-  $: mapData = U.arr2objMapper(data)
-  $: r_tracks = mapData(({k,m,M}) => [k,[m,M]])
-  //$: r_tracks = R.map(k=>[k.m,k.M],dataObj)
-  $: r_tracks_padded = mapData(({k,m,M}) => [k,[m+zf*(M-m)/2,M-zf*(M-m)/2]])
+  const Lr = x=>R.prop("Lr",x)
+  const Lt = x=>R.prop("Lt",x)
+  const view = (lenses,x) => R.lift(R.pipe(...lenses))(x)
+  //f is a function that turns b into a function
+
+
+
+function applyUpdate(_sandbox, update, path){
+  //a priori le diagramme des contraintes commute (except if you include the cursor)
+  let res1 = R.modifyPath(path, update, _sandbox);
+  //ensuite each 
   
-  let ax = data.map(a=>a.k)
-  
-  let foo_adjunction = [
-    // array => object
-    // object => array
-  ]
 
-  // TWO WAY BINDINGS
-  let hilbert_adjunction = (axes) => (bits) => [
-    (h_index) => U.zipAsKeyVal(axes)(Float32Array.from(W.forward(h_index, bits, axes.length))),
-    (h_axes) => W.inverse(Uint32Array.from(U.unzipIntoVal(h_axes)(axes)), bits),
-  ]
+}
 
-  let remapping_adjunction = [
-    ([h_axes, ctx]) => [U.obj2objZipper(ctx)(h_axes)(U.lerp_AB([0,MAX_A])),ctx],
-    ([scaled_coordinates,ctx]) => [U.obj2objZipper(ctx)(scaled_coordinates)(U.lerp_BA([0,MAX_A])),ctx]
+  //let axr = R.map(x=>R.pick(["Lr"],x),data)
+  //let axt = R.map(x=>R.pick(["Lt"],x),data)
+
+  //  // TWO WAY BINDINGS
+
+
+  let hilbert_adjunction = (axes,b) =>[
+      (n) => R.zipObj(axes, W.forward(n, b, axes.length)),
+      (X) => W.inverse(u32a.from(R.map(k=>X[k],axes)), b),
   ];
 
-  // RANGE SLIDERS
-  let [hr, hr_axes_u32] = sync(...hilbert_adjunction(ax)(32));
-  let [hr_axes_f32, r_data] = sync(...remapping_adjunction);
-  $hr = W.biguint_prod(0.5,MAX_H,100);
-  $: locked_r = mapData(({k,r_lock})=>[k, r_lock])
-  $: $hr_axes_f32 = [U.objUpdate_partial(locked_r)($hr_axes_u32), r_tracks_padded]; //convert hilbert axes values to f32]
-  $: t_tracks = U.obj2objZipper(U.zoom(r_tracks)(zf))($r_data[0])(U.computeSubrange)
+  let s = R.lift(x=>lerp(mM(x),[0,MAX_A])(x.v))
 
+  let remapping_adjunction = [
+    ([h_axes, ctx]) => [U.o2o(ctx)(h_axes)(U.lerp_AB([0, MAX_A])), ctx],
+    ([scaled_coordinates, ctx]) => [U.o2o(ctx)(scaled_coordinates)(U.lerp_BA([0, MAX_A])),ctx]
+  ];
+
+
+  let [Aya,[Na,Ka],Mura] = nestedStore([x=>x/2,x=>x*2],A_below_B(2,4,0),[x=>x/2,x=>x*2])
+  $Aya = 8;
+  let [hr, hrX] = sync(...hilbert_adjunction(ax,32))
+  let [ht, htX] = sync(...hilbert_adjunction(ax,32))
+  //let [ht, htX] = sync(...random_adjunction(ax))
+  
+  $hr = W.biguint_prod(0.5, MAX_H, 100);
+  $ht = W.biguint_prod(0.5, MAX_H, 100);
+
+  let [hrX_f, r_data] = sync(...remapping_adjunction);
+  //let rScaled = sync(...remapping_adjunction);
+
+  $: $hrX_f = [
+    R.mergeDeepWith(
+      R.call,
+      view([Lr],data),
+      $hrX),
+    view([mM, U.zoom(zf)],data)
+  ]
+
+
+  $: t_tracks = R.mergeDeepWith(
+    U.offset,
+    view([mM,U.thick(zf)],data),
+    R.mergeDeepWith(
+      R.call,
+      view([Lr],data),
+      $r_data[0])
+  )
+  
   // THUMB SLIDERS
-  let [ht, ht_axes_u32] = sync(...hilbert_adjunction(ax)(32));
-  let [ht_axes_f32, t_data] = sync(...remapping_adjunction);
-  $ht = W.biguint_prod(0.5,MAX_H,100);
-  $: locked_t = mapData(x=>[x.k, x.t_lock])
-  $: $ht_axes_f32 = [U.objUpdate_partial(locked_t)($ht_axes_u32), t_tracks]; 
+
+  let [htX_f, t_data] = sync(...remapping_adjunction);
+ 
+  $: $htX_f = [
+    R.mergeDeepWith(
+      R.call,
+      view([Lt],data),
+      $htX),
+    t_tracks];
+
 
   // RENDERING TO THE DOM
-  $: r_render = k => U.lerp_AB(r_tracks[k])([0,track_w])(locked_r[k]($r_data[0][k]))
-  $: t_render = k => U.lerp_AB(r_tracks[k])([0,track_w])($t_data[0][k])
-  $: hr_render = W.rescale_index($hr,32,data.length)
-  $: ht_render = W.rescale_index($ht,32,data.length)
-  
+  $: r_render = (k) => U.lerp(view([mM],data)[k],[0, track_w])(view([Lr],data)[k]($r_data[0][k]));
+   $: t_render = (k) => U.lerp_AB(view([mM],data)[k])([0, track_w])($t_data[0][k]);
+  $: hr_render = W.rescale_index($hr, 32, currentPreset.length);
+  $: ht_render = W.rescale_index($ht, 32, currentPreset.length);
+
   // STREAMS AND THEIR OBSERVERS
-  let drag_ = undefined;
-  let shiftdown_ = undefined;
-  let shiftup_ = undefined;
-  let click_ = undefined;
-  let wheel_ = undefined;
+  let drag_, cursorInfo_,click_,wheel_, move_, pool_, pool2_, counterPlus_
+   drag_  = cursorInfo_ = click_ = counterPlus_ = wheel_ = move_ = pool_ = pool2_ = undefined
 
-  let galois_pullBack = (adj)=>(f)=>(val)=>adj[1](f(adj[0](val)))  
-  
-  let comply = (slave) => (master) => {
-    let a = hilbert_adjunction(ax)(32)[0](slave)
-    let f = U.objUpdate_partial(mapData(a=>[a.k, a[master]]));
-    return hilbert_adjunction(ax)(32)[1](f(a))
+
+  function equip(name){
+    instruments = R.mapObjIndexed(
+    (x,k) => k == name ? R.modify("active",a=>!a,x) : R.modify("active",a=>false,x),
+    instruments)
+    activeInstrument = R.keys(R.pickBy((x,key)=>x.active, instruments))[0]
   }
 
-  function wheel_handler(val){
-    zf = U.clamp([0,1])(zf + U.scale([0, ih])([0,1])(val.sustain.wheelDeltaY)) 
-  }
-
-  function handleClick(i,lock,k){
-      if(instruments[0].active){
-        let val;
-        if(lock="r_lock"){
-          console.log($r_data[0][k])
-          val = $r_data[0][k]
-        }
-        else if(lock="t_lock"){
-          val = $t_data[0][k]
-        }
-        data[i][lock] = x=>val
-      }
-    }
-  function drag_handler(val) {
-    let k = val.attack.target.dataset.id; //get the key of the target
     
+  //object version
+  function remove1(removeA,fromB){
+    fromB = R.omit([removeA],fromB)
+  }
+
+  //array version
+  function remove2(removeA,fromB){
+    fromB = fromB
+  }
+  
+
+  function savePreset(val){
+    console.log("saved "+U.smallestPresetAvailable(R.pluck(["name"],presets)))
+    presets = R.append({
+      name:U.smallestPresetAvailable(R.pluck(["name"],presets)),
+      data:{},
+      h0:"",
+      h1:""
+    }, presets)
+}
+
+  function handleClick(lock, k) {
+    // if (instruments[0].active) {  
+    //   let val
+    //   if (lock == 'Lr') {
+    //     val =$r_data[0][k];
+    //   } else if (lock == 'Lt') {
+    //   val = $t_data[0][k];
+    
+    //   }
+    //   data = R.assocPath([k, lock], x=>val, data);
+    // }
+  }
+
+  function dragger_feedforward(){
+    //if the target is compatible, change the display of the target, i.e. add 
+  }
+
+
+
+  function drag_effect({atk, sus}) {
+    let k = atk.target.dataset.id; //get the key of the target
+    let f_update
     // OBSERVER FOR INDIVIDUAL THUMB DRAG
-    if(val.attack.target.classList.contains("slider")){
-      let scale = U.scale([0, track_w])(r_tracks[k]); //set a remapping function from the slider to the ranges
-      let apply_delta = val.sustain.applyDelta(scale).x; //compute a new update function by currying the functor with g
-
-      if(val.attack.target.classList.contains("range")){    
-        let upd = U.compose(apply_delta,U.clamp(r_tracks_padded[k]))
-        $r_data = U.updateContextfulObject($r_data,upd,k)
-        $hr_axes_u32 = $hr_axes_f32[0];
+    if (atk.target.classList.contains('slider')) {
+      let [from,to] = [[0, track_w],view([mM],data)[k]]
+      if (atk.target.classList.contains('range')) {
+        f_update = R.compose(add(U.scale(from,to)(sus.movementX)), U.clamp(view([mM, U.zoom(zf)],data)[k]));
+        $r_data = R.modifyPath([0,k],f_update,$r_data)
+        $hrX = $hrX_f[0];
       }
-
-      if(val.attack.target.classList.contains("thumb")){
-        let upd = U.batchCompose(apply_delta,U.clamp(r_tracks[k]),U.clamp(t_tracks[k]));
-        $t_data = U.updateContextfulObject($t_data,upd,k)
-        $ht_axes_u32 = $ht_axes_f32[0];
+      if (atk.target.classList.contains('thumb')) {
+        f_update = R.compose(add(U.scale(from,to)(sus.movementX)), U.clamp(view([mM],data)[k]), U.clamp(t_tracks[k]));
+        $t_data = R.modifyPath([0,k],f_update,$t_data)
+        $htX = $htX_f[0];
       }
     }
 
     // OBSERVER FOR MACRO THUMB DRAG
-    if(val.attack.target.classList.contains("macro-thumb")){
-      let scale = U.scale2bigint([0,macro_w])(["0",MAX_H]);
-      let apply_big_delta = a=>W.bigint_sum(a,scale(val.sustain.delta.x));//compute a new update function by currying the functor with g
-      let apply_bigint_clamp = a => W.bigint_clamp("0",MAX_H,a)
-      let upd = U.batchCompose(apply_big_delta,apply_bigint_clamp)
-      if(val.attack.target.id == 'h_r'){
-        // $hr = r_comply_to_locked_values(upd($hr))
-        $hr = comply(upd($hr))("r_lock")
-        $hr_axes_f32[0] = $hr_axes_u32
+    if (atk.target.classList.contains('macro-thumb')) {
+      let [from,to] = [[0, macro_w],['0', MAX_H]]
+      // @ts-ignore
+      f_update = R.pipe(U.clamp(['0', MAX_H]),add(U.scale(from,to)(sus.movementX*0.1)));
+      if (atk.target.id == 'h_r') {
+        $hr = f_update($hr)
+        $hrX_f = [$hrX, $hrX_f[1]];
+        
       }
-      if(val.attack.target.id == 'h_t'){     
-        $ht = comply(upd($ht))("t_lock")
-        $ht_axes_f32[0] = $ht_axes_u32
+      if (atk.target.id == 'h_t') {
+        $ht =  f_update($ht)
+        $htX_f = R.assoc([0],$htX, $htX_f);
       }
     }
   }
 
+  function move_feedback(e){
+    instruments[activeInstrument]["ev"] = e;
+  }
+  function drag_feedback(e){
+    instruments[activeInstrument]["ev"] = e;
+  }
+
+  function shiftdown_effect(val){
+    document.body.style.setProperty('overflow', 'hidden')
+    document.getElementById("all-sliders").style.setProperty('overflow', 'hidden')
+  }
+
+  function shiftup_effect(val){
+    document.getElementById("all-sliders").style.setProperty('overflow', 'scroll')
+  }
+
+  function wheel_effect(val) {
+    zf = R.clamp(0.0000001, 1, zf + U.scale([0, ih*100],[0.0000001, 1])(val.sus.wheelDeltaY));
+  }
+
+  let hit_
+
   onMount(() => {
-    drag_ = S.asr(S.hit(S.mousedown_.thru(S.intoXY), document), S.mousemovedelta_, S.mouseup_);
-    drag_.thru((x) => x.onValue((val) => drag_handler(val)));
-    shiftdown_ = S.shiftdown_.thru((x) => x.onValue((val) => document.body.style.setProperty("overflow","hidden")))
-    shiftup_ = S.shiftup_.thru((x) => x.onValue((val) => document.body.style.setProperty("overflow","scroll")))
-    wheel_ = S.asr(S.hold(shiftdown_),S.mousewheel_,shiftup_)
-    wheel_.thru((x) => x.onValue((val) => wheel_handler(val)));
-    // click_ = S.hit(S.mousedown_.thru(S.intoXY), document)
-    // click_ = S.mousedown_.thru((x) => x.onValue((val) => console.log(val)))
-    //click_ = S.hit2(S.mousedown_, document).thru((x) => x.onValue((val) => click_handler(val)))
+    console.log("App")
+    pool_ = K.pool();
+    pool_.plug(S.mouseup_);
+    pool_.plug(S.mouseleave_(document.getElementById("test")))
+    counterPlus_ = S.counterPlus_(document.getElementById("test"),pool_)
+    move_ = mousemove_.thru(S.obs(move_feedback))
+    shiftdown_.thru(S.obs(shiftdown_effect));
+    shiftup_.thru(S.obs(shiftup_effect));
+    wheel_ = S.asr(S.hold(shiftdown_), S.mousewheel_, shiftup_)
+    .thru(S.obs(wheel_effect));
+    drag_ = asr(mousedown_, K.merge([mousemove_.thru(S.obs(move_feedback)),counterPlus_]), mouseup_)
+    .thru(S.obs(drag_effect)).thru(S.obs(drag_feedback))
+    hit_ = mousedown_.map((e)=>R.assoc("targets",document.elementsFromPoint(e.x, e.y),e));
+    hit_.log()
+    //the handler of drag_ is the drag_handler of the equipped instrument
+    
+  });
 
-  //   h = new HydraRenderer({
-  //     makeGlobal: false,
-  //     autoLoop: true,
-  //     detectAudio: false,
-  //     canvas: hydra_canvas,
-  //     precision: 'highp',
-  //   }).synth;
-   });
 
-  // afterUpdate(() => {
-  //   return synth2($t_data[0])(h)
-  // });
 </script>
 
-<svelte:window bind:innerWidth={iw} bind:innerHeight={ih}/>
+<svelte:window bind:innerWidth={iw} bind:innerHeight={ih} />
 <main>
-  <div class="menu">
-    <div class="instrument-palette"> 
-      {#each instruments as {name,active},i}
-        {name}
-        <input type=checkbox bind:checked={active}>
-      {/each}
-      </div>
-    <!-- <div class="instrument-palette"> 
-      <button class="instrument">lock</button>
-      <button class="instrument">delete</button>
-      <button class="instrument">save</button>
-      <button class="instrument">load</button>
-    </div> -->
+  {#each Object.entries(instruments) as [name, {active,component,color,ev}]}
+  <div id="ctr" style="position:fixed; width:0; height:0; z-index:100" class="container" class:inactive="{!active}">
+    <svelte:component this={instruments[name].component} {ev} {ih} {iw}>
+    </svelte:component>
   </div>
-  <!-- <div class="menu">
-    {$hr}
-  </div> -->
+  {/each}
+  <div class="menu">
+   
+    <div class="instrument-palette">
+      {#each Object.entries(instruments) as [name, {active,component,color,ev}]}
+      <button class:active="{active}" on:click={()=>equip(name)}>{name}</button>
+      <!-- style="position: fixed;left:{ev.x+1}px; top:{ev.y+1}px" -->
+      <!-- <div id="ctr" style="position:fixed; width:0; height:0; z-index:100" class="container" class:inactive="{!active}">
+        <svelte:component this={instruments[name].component} {ev} {ih} {iw}>
+        
+        </svelte:component>
+      </div> -->
+      {/each}
+    </div>
+    <div id="test" style="background-color:blue">ok</div>
+    <div id=""></div>
+    <div class="presets">
+      <button on:click={savePreset}>save</button>
+      {#if presets.length>0}
+        {#each presets as {name, data, h0, h1}}
+        <span class="preset" role="textbox" bind:textContent={name} aria-multiline="false" contenteditable>{name}</span>
+        <!-- <input class="renamable" type="text" bind:value={name} disabled/> -->
+        {/each}
+      {/if} 
+    </div>
+   
+  </div>
   <div class="app">
     <div class="ui">
-      <div class="sliders" id="macro-sliders">
+      <div class="slider-container" id="macro-sliders">
+        
         <div class="slider macro-slider">
+          <div class="param-name">Macro #2 (Global exploration) </div>
           <div class="track" bind:clientWidth={macro_w}>
-            <div id="h_r" class="macro-thumb" style="left:{hr_render*macro_w}px; width:{thumb_w}px" />
+            <div
+              id="h_r"
+              class="macro-thumb"
+              style="left:{hr_render * macro_w}px; width:{thumb_w}px"
+            />
           </div>
         </div>
+        
         <div class="slider macro-slider">
+          <div class="param-name">Macro #2 (Local exploration) </div>
           <div class="track">
-            <div id="h_t" class="macro-thumb" style="left:{ht_render*macro_w}px; width:{thumb_w}px"/>
+            <div
+              id="h_t"
+              class="macro-thumb"
+              style="left:{ht_render * macro_w}px; width:{thumb_w}px"
+            />
           </div>
         </div>
       </div>
-      <div class="sliders" id="all-sliders">
+      <div class="slider-container" id="all-sliders">
         <!-- The list of individual sliders is generated by iterating over the store containing sliders data-->
-        {#each data as {k,m,M},i}
+        {#each currentPreset as [k, { m, M, fullname, Lr, Lt}]}
           <div class="slider">
-            <div>{k}</div>
+            <div class="param-name">{fullname}</div>
             <input type="number" class="bound" bind:value={m} />
-            <!-- <input class="bound" placeholder={r_tracks[key][0]} bind:value={r_tracks[key][0]} /> -->
-            <div id={k + 'track'} class="track" bind:clientWidth={track_w}>
+            <div data-id={k} class="track"  bind:clientWidth={track_w}>
               <div
                 data-id={k}
                 id={k + 'range'}
+                class:preview="{k.includes("os")}"
+                class:locked="{k.length != 0}"
                 class="range slider"
-                on:click={handleClick(i,"r_lock",k)}
-                style=
-                  "width:{zf * track_w}px;
-                  left:{r_render(k)-(zf * track_w)/2}px;"
+                style="width:{zf * track_w}px;
+                  left:{r_render(k) - (zf * track_w) / 2}px;"
                 bind:clientWidth={range_w}
+                on:click={()=>handleClick('Lr', k)}
               />
-              <!-- The slider's thumb position is computed by remapping its data to the dimensions of its parent widget -->
-              <!-- r_render(k)+t_render(k)-(zf * track_w)/2 -->
+                
+              <div class="middle" data-id={k} style="width:{2}px;
+                left:{r_render(k) - 1}px;"/>
               <div
                 data-id={k}
                 id={k + 'thumb'}
+                class:preview="{k.includes("os")}"
+                class:locked="{k.length != 0}"
                 class="thumb slider"
-                style="left:{t_render(k)-thumb_w/2}px; width:{thumb_w}px"
+                style="left:{t_render(k) - thumb_w / 2}px; width:{thumb_w}px"
                 bind:clientWidth={thumb_w}
+                on:click={()=>handleClick('Lt', k)}
               />
             </div>
             <input type="number" class="bound" bind:value={M} />
           </div>
         {/each}
+      </div>       
+    <!-- </div>
+      <div style="background-color: red; display: flex; flex-direction: column">
+      <input bind:value={$Aya} type=number />
+      <div style="display: flex; flex-direction: row">  
+        <button on:click={()=>Na.update(x=>x-0.001)}>-</button>
+          {$Na}
+        <button on:click={()=>Na.update(x=>x+0.001)}>+</button>
       </div>
-    </div>
-    <div class="viewport">
-      <canvas bind:this={hydra_canvas} class="hydra-canvas" />
+      <div style="display: flex; flex-direction: row">  
+        <button on:click={()=>Ka.update(x=>x-0.001)}>-</button>
+          {$Ka}
+        <button on:click={()=>Ka.update(x=>x+0.001)}>+</button>
+      </div>
+      <input bind:value={$Mura} type=number />
+    </div> -->
+    <div class="viewport" >
+      <!-- <HydraViewer synth={synth2} data={$t_data[0]} w={1200} h={1000}/> -->
     </div>
   </div>
+  
 </main>
 
+<style>
+  .container{
+    background-color: rgba(0,0,0,0);
+  }
+  .active{
+    filter: contrast(50%) saturate(50%) opacity(70%);
+  }
+  .locked{
+    filter: contrast(50%) saturate(50%) opacity(70%);
+  }
+  .preview{
+    filter:brightness(120%) hue-rotate(60deg);
+  }
 
+  .inactive{
+    display:none;
+  }
 
-  
-
-  
-    
-  
-    
+</style>

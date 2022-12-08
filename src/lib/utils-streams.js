@@ -1,20 +1,13 @@
 import Kefir from "kefir";
 
-export const hit = (xy_, viewport) =>
-xy_.flatMap((xy) =>
-  Kefir.constant({
-    start: xy,
-    target: viewport.elementFromPoint(...xy),
-  })
-);
+export const hit= (mouse_, viewport) =>
+  mouse_.flatMap((e) => {
+    let a = {...e,
+      target: viewport.elementFromPoints(e.clientX, e.clientY)[1],
+    }
+    return Kefir.constant(a)
+});
 
-export const hit2= (mouse_, viewport) =>
-mouse_.flatMap(({clientX, clientY}) =>
-  Kefir.constant({
-    start: [clientX, clientY],
-    target: viewport.elementFromPoint(clientX, clientY),
-  })
-);
 
 export const hold = (e_) =>
 e_.flatMap((e) =>
@@ -25,23 +18,40 @@ e_.flatMap((e) =>
 export const asr = (a_, s_, r_) =>
 a_.flatMap((a) =>
   Kefir.constant(a)
-    .sampledBy(s_, (atk, sus) => {return {attack:atk, sustain:sus}})
+    .sampledBy(s_, (atk, sus) => {return {atk:atk, sus:sus}})
     .takeUntilBy(r_)
 );
 
-//helper to convert a pointer object into a (x,y) pair
-export const intoXY= cursorProps => cursorProps.map(val => [val.clientX, val.clientY])
 
-//shorthands for common mouse events
+
+export const counterPlus_ = (el,end) => Kefir.fromEvents(el, 'mouseenter').flatMap(
+  (e)=>Kefir.interval(10,{movementX:10}).takeUntilBy(end))
+
+export const counterMinus_ = (el,end) => Kefir.fromEvents(el, 'mouseenter').flatMap(
+    (e)=>Kefir.interval(10,{movementX:10}).takeUntilBy(end))
+
+export const counter2_ = (start,end) => start.flatMap(
+  (e)=>{
+    let m = e.target.dataset.machine;
+    //machine should be an incrementer or a decrementer
+    //something like: (stepsize)=>{movementX:-stepsize}
+    return Kefir.interval(10,{movementX:10}).takeUntilBy(end)
+
+})
+  
+
+export const mouseleave_ = el => Kefir.fromEvents(el, 'mouseleave')
 export const mousedown_ = Kefir.fromEvents(window, 'mousedown');
 export const mouseup_ = Kefir.fromEvents(window, 'mouseup');
 export const shiftdown_ = Kefir.fromEvents(window,'keydown');
 export const shiftup_ = Kefir.fromEvents(window, 'keyup')
 export const mousemove_ = Kefir.fromEvents(window, 'mousemove');
 export const mousewheel_= Kefir.fromEvents(window,'wheel');
-export const mousemovedelta_ = mousemove_.map((xy)=>{
-  return  {
-    delta: {x: xy.movementX,y:xy.movementY},
-    applyDelta: g=>{return {x:val=>val+g(xy.movementX),  y:val=>val+g(xy.movementY)}}
-  }
-})
+
+export const applyDelta = (xy)=>{
+  let b = g=>{return {x:val=>val+g(xy.movementX),  y:val=>val+g(xy.movementY)}}
+  let a = {...xy, applyDelta:b}
+  return a
+}
+
+export const obs = f => x => x.onValue(val=>f(val))
