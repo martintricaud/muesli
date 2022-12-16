@@ -5,13 +5,13 @@
 </script>
 
 <svelte:window bind:innerWidth={vw} bind:innerHeight={vh}/>
-<div class="infobox" style="top:{ev.y+20}px; left:{ev.x+20}px">
+<div class="infobox" style="top:{ev.y+10}px; left:{ev.x+10}px">
 {name}
 </div>
 
 <style>
    .infobox{
-        width:20px;
+        width:auto;
         height:20px;
         position:fixed;
         background-color:blue;

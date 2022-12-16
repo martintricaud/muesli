@@ -1,5 +1,5 @@
 - [ ] line breaks should be forbidden when renaming presets
-- [ ] customize parent-children behaviours
+- [x] ~~customize parent-children behaviours~~
 - [x] ~~instrument name appears as text box under cursor~~
 - [x] ~~presets should have unique names~~
   - [x] ~~function that computes smallest available value~~
@@ -13,19 +13,23 @@
 - [x] ~~clicking an inactive instrument makes it active and all others inactive, clicking an active instrument makes it inactive~~
 - [ ] hilbert arrays store their locked values (shape is ```{v:foo, locked:bar}``` )
 - [ ] can hilbert adjunction be reactively parametrized?
-- [ ] define a store for ranges
-  - [ ] scaleAround
-  - [ ] translate
-  - [ ] block
+- [x] ~~define a store for ranges~~
+  - [x] ~~scaleAround~~
+  - [x] ~~translate~~
+  - [x] ~~block~~
 - [ ] add feedforward for instruments
   - [ ] eraser
   - [ ] pin
 - [ ] define a stream instrument_down that removes the n first rows of "targets"
-
 - [ ] compose adjunctions with ```R.tap```
-
-
 - [ ] how many levels of orthozoom ?
+- [x] ~~lift the store~~
+  - [x] ~~drop a key~~
+  - [ ] add a key with specified fields
+  - [ ] add key without specifying fields
+  - [ ] update non existing key
+  - [x] ~~update existing key~~
+  - [x] ~~update zoom factor~~
 
 each orthozoom level must be let's say 10 px high. 
 if max indexable value is let's say 2^120, this granularity must be achievable 2^120

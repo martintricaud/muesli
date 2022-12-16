@@ -77,6 +77,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/ramda@npm:^0.28.20":
+  version: 0.28.20
+  resolution: "@types/ramda@npm:0.28.20"
+  dependencies:
+    ts-toolbelt: ^6.15.1
+  checksum: 02c1e958a09724079acd975aefd2e9ae1327097f941c661ca596e2a8e16df3bd0f0755a16ab378eeb562d8624d7614a3159de2a0129e7d8522a2d79699390818
+  languageName: node
+  linkType: hard
+
 "abbrev@npm:^1.0.0":
   version: 1.1.1
   resolution: "abbrev@npm:1.1.1"
@@ -1066,10 +1075,12 @@ __metadata:
   resolution: "muesli@workspace:."
   dependencies:
     "@sveltejs/vite-plugin-svelte": ^1.0.2
+    "@types/ramda": ^0.28.20
     esm-seedrandom: ^3.0.5
     feather-icons: ^4.29.0
     hydra-synth: ^1.3.22
     kefir: ^3.8.8
+    pattern.css: ^1.0.0
     ramda: ^0.28.0
     seedrandom: ^3.0.5
     svelte: ^3.49.0
@@ -1172,6 +1183,13 @@ __metadata:
   version: 1.0.7
   resolution: "path-parse@npm:1.0.7"
   checksum: 49abf3d81115642938a8700ec580da6e830dde670be21893c62f4e10bd7dd4c3742ddc603fe24f898cba7eb0c6bc1777f8d9ac14185d34540c6d4d80cd9cae8a
+  languageName: node
+  linkType: hard
+
+"pattern.css@npm:^1.0.0":
+  version: 1.0.0
+  resolution: "pattern.css@npm:1.0.0"
+  checksum: c82d1b67deabeaea6cb90e921cc47db6aebcf9c8cb86400674e31098d5f91bd57f2356ef38c08d7dd146d2283fdac56a0c22f08180bfe7d17fcdd5c5d25f8d3d
   languageName: node
   linkType: hard
 
@@ -1523,6 +1541,13 @@ __metadata:
     mkdirp: ^1.0.3
     yallist: ^4.0.0
   checksum: a04c07bb9e2d8f46776517d4618f2406fb977a74d914ad98b264fc3db0fe8224da5bec11e5f8902c5b9bcb8ace22d95fbe3c7b36b8593b7dfc8391a25898f32f
+  languageName: node
+  linkType: hard
+
+"ts-toolbelt@npm:^6.15.1":
+  version: 6.15.5
+  resolution: "ts-toolbelt@npm:6.15.5"
+  checksum: 24ad00cfd9ce735c76c873a9b1347eac475b94e39ebbdf100c9019dce88dd5f4babed52884cf82bb456a38c28edd0099ab6f704b84b2e5e034852b618472c1f3
   languageName: node
   linkType: hard
 

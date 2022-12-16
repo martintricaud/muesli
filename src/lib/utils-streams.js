@@ -1,4 +1,5 @@
 import Kefir from "kefir";
+import * as R from 'ramda';
 
 export const hit= (mouse_, viewport) =>
   mouse_.flatMap((e) => {
@@ -14,6 +15,12 @@ e_.flatMap((e) =>
   Kefir.constant(e)
 );
 
+export const capture = (value,e_) =>
+e_.map(e=>R.assoc('capture',value,e)).flatMap((e) =>
+  Kefir.constant(e)
+);
+
+(e) => R.assoc('targets', document.elementsFromPoint(e.x, e.y), e)
 
 export const asr = (a_, s_, r_) =>
 a_.flatMap((a) =>

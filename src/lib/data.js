@@ -33,6 +33,8 @@ export const preset1bis = [
     ["re2o", {m:-1000, M:1000, Lr: x=>x, Lt: x=>x}] //repeat offset, float
 ];
 
+
+
 export const synth1 = (a)=>x=> 
 x.osc(a.os1f, 1/a.os1f, a.os1o)
 .color(a.co1r, a.co1g, a.co1b)
@@ -68,6 +70,28 @@ export const preset2 = [
     ["sca",{m:0.01, M:10, Lr: x=>x, Lt: x=>x, fullname:"scale"}], 
     ["po1",{m:0.01, M:10, Lr: x=>x, Lt: x=>x, fullname:"posterize 1"}], 
     ["po2",{m:0.01, M:10, Lr: x=>x, Lt: x=>x, fullname:"posterize 2"}], 
+];
+
+export const preset2bis = [
+    ["os1f",{ c0:0, c1:100}], //freq, float, no right bound but above 100 is a lot
+    ["os1o",{ c0:0, c1:10}], //offset
+    ["co1r",{ c0:0, c1:10}], //red, int
+    ["co1g",{c0:0, c1:10}], //green, int
+    ["co1b",{c0:0, c1:10}], //blue, int
+    ["sa10",{c0:0, c1:10}], //saturation, int
+    ["lu10",{c0:0, c1:1}],     
+    ["oskf",{c0:0, c1:100}], //freq, float, no right bound but above 100 is a lot
+    ["modk",{c0:0, c1:1}], 
+    ["modRx",{c0:0, c1:10}], 
+    ["modRy",{c0:0, c1:10}], 
+    ["modOx",{c0:0, c1:10}], 
+    ["modOy",{c0:0, c1:10}], 
+    ["oscModRf",{c0:0, c1:100}], 
+    ["rot",{c0:0, c1:2 * Math.PI}], 
+    ["mod",{c0:0, c1:1}], 
+    ["sca",{c0:0.01, c1:10}], 
+    ["po1",{c0:0.01, c1:10}], 
+    ["po2",{c0:0.01, c1:10}], 
 ];
 
 export const synth2 = a => x => 

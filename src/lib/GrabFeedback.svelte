@@ -2,7 +2,7 @@
     import { onMount, afterUpdate, beforeUpdate } from 'svelte';
     import * as R from 'ramda';
     let vw, vh
-    export let ev
+    export let ev, name
     let [trackW, thumbH] = [20,20]
     $: [trackX, trackY, trackH] = R.has('atk')(ev) ? 
         [R.clamp(0,500,ev.sus.x)+1, R.clamp(0,vh,ev.atk.y - 200)+1, 400] : 
@@ -18,9 +18,11 @@
 <svelte:window bind:innerWidth={vw} bind:innerHeight={vh}/>
 <div class="orthozoom" style="top:{trackY}px; left:{trackX}px;  height:{trackH}px;">
     <div class="gauge" style="top:{thumbY}px; left:{thumbX}px;">
-        <div class="gaugeAfter plus" id="plus">+</div>
-        <div class="gaugeBefore minus">-</div>
+       
+        
     </div>
+    <div class="gaugeAfter plus" id="plus" style="top:{thumbY}px; left:{thumbX + 20}px;">+</div>
+    <div class="gaugeBefore minus" style="top:{thumbY}px; left:{thumbX - 20}px;">-</div>
 </div>
 <slot></slot>
 
@@ -41,20 +43,20 @@
   
     .gaugeAfter{
         display:block;
-        position: relative;
+        position: fixed;
         width:20px;
         height:20px;
-        left:20px;
+        /* left:20px; */
         background-color:red;
     }
 
     .gaugeBefore{
         display:block;
-        position: relative;
+        position: fixed;
         width:20px;
         height:20px; 
-        left:-20px;
-        top:-20px;
+        /* left:-20px;
+        top:-20px; */
         background-color:red;
     }
 </style>
