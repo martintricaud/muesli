@@ -2,7 +2,7 @@
   //import { scale } from './lib/utils2.ts';
   import { onMount, afterUpdate } from 'svelte';
   import { get } from 'svelte/store';
-  import { sync, random_adjunction, liftedConstraintStore } from './lib/stores';
+  import { sync, random_adjunction, liftedConstraintStore, muesliStore } from './lib/stores';
   import { shiftdown_, shiftup_, mouseup_, mousedown_, mousemove_, mouseleave_, mousewheel_, asr } from './lib/utils-streams.js';
   import { synth2, preset2, preset2bis } from './lib/data.js';
   import { wasm_functions as W } from './main.js';
@@ -74,14 +74,6 @@
   const view = (lenses, x) => R.lift(R.pipe(...lenses))(x);
   //f is a function that turns b into a function
 
-  function applyUpdate(_sandbox, update, path) {
-    //a priori le diagramme des contraintes commute (except if you include the cursor)
-    let res1 = R.modifyPath(path, update, _sandbox);
-    //ensuite each
-  }
-
-  //let axr = R.map(x=>R.pick(["Lr"],x),data)
-  //let axt = R.map(x=>R.pick(["Lt"],x),data)
 
   //  // TWO WAY BINDINGS
 
@@ -90,15 +82,13 @@
     (X) => W.inverse(u32a.from(R.map((k) => X[k], axes)), b),
   ];
 
-  let s = R.lift((x) => lerp(mM(x), [0, MAX_A])(x.v));
 
   let remapping_adjunction = [
     ([h_axes, ctx]) => [U.o2o(ctx)(h_axes)(U.lerp_AB([0, MAX_A])), ctx],
     ([scaled_coordinates, ctx]) => [U.o2o(ctx)(scaled_coordinates)(U.lerp_BA([0, MAX_A])), ctx],
   ];
 
-
-  let [testStore2,index] = liftedConstraintStore(preset2bis);
+  let [H0,H1,testStore2,index] = muesliStore(preset2bis);
   let [hr, hrX] = sync(...hilbert_adjunction(ax, 32));
   let [ht, htX] = sync(...hilbert_adjunction(ax, 32));
   //let [ht, htX] = sync(...random_adjunction(ax))
@@ -129,18 +119,16 @@
   $: t_render = (k) => U.lerp_AB(view([mM], data)[k])([0, track_w])($t_data[0][k]);
   $: hr_render = W.rescale_index($hr, 32, currentPreset.length);
   $: ht_render = W.rescale_index($ht, 32, currentPreset.length);
+  $: H0_render = W.rescale_index($H0, 32, currentPreset.length);
+  $: H1_render = W.rescale_index($H1, 32, currentPreset.length);
 
   // STREAMS AND THEIR OBSERVERS
   let drag_, cursorInfo_, click_, wheel_, move_, pool_, pool2_, counterPlus_;
   drag_ = cursorInfo_ = click_ = counterPlus_ = wheel_ = move_ = pool_ = pool2_ = undefined;
 
-
-
   function savePreset(val) {
     console.log('saved ' + U.smallestPresetAvailable(R.pluck(['name'], presets)));
-    presets = R.append(
-      {
-        name: U.smallestPresetAvailable(R.pluck(['name'], presets)),
+    presets = R.append({name: U.smallestPresetAvailable(R.pluck(['name'], presets)),
         data: {},
         h0: '',
         h1: '',
@@ -183,50 +171,6 @@
     activeInstrument = R.keys(R.pickBy((x, key) => x.active, instruments))[0];
   }
 
-  function drag_effect({ atk, sus }) {
-    let k = atk.target.dataset.id; //get the key of the target
-    let f_update;
-
-    // OBSERVER FOR INDIVIDUAL THUMB DRAG
-    if (atk.target.classList.contains('slider')) {
-      let [from, to] = [[0, track_w], view([mM], data)[k]];
-      if (atk.target.classList.contains('range')) {
-        f_update = R.compose(
-          add(U.scale(from, to)(sus.movementX)),
-          U.clamp(view([mM, U.zoom(zf)], data)[k])
-        );
-        $r_data = R.modifyPath([0, k], f_update, $r_data);
-        $hrX = $hrX_f[0];
-      }
-      if (atk.target.classList.contains('thumb')) {
-        f_update = R.compose(
-          add(U.scale(from, to)(sus.movementX)),
-          U.clamp(view([mM], data)[k]),
-          U.clamp(t_tracks[k])
-        );
-        $t_data = R.modifyPath([0, k], f_update, $t_data);
-        $htX = $htX_f[0];
-      }
-    }
-
-    // OBSERVER FOR MACRO THUMB DRAG
-    if (atk.target.classList.contains('macro-thumb')) {
-      let [from, to] = [
-        [0, macro_w],
-        ['0', MAX_H],
-      ];
-      // @ts-ignore
-      f_update = R.pipe(U.clamp(['0', MAX_H]), add(U.scale(from, to)(sus.movementX * 0.1)));
-      if (atk.target.id == 'h_r') {
-        $hr = f_update($hr);
-        $hrX_f = [$hrX, $hrX_f[1]];
-      }
-      if (atk.target.id == 'h_t') {
-        $ht = f_update($ht);
-        $htX_f = R.assoc([0], $htX, $htX_f);
-      }
-    }
-  }
 
   function zoom_effect(){
 
@@ -237,31 +181,20 @@
     store.remove([key])
   }
 
-  function drag_effect2({ atk, sus }) {
-    let [key, field] = [atk.target.dataset.key, atk.target.dataset.field]
-    let f = add(U.scale([0, track_w], [$testStore2[key].c0,$testStore2[key].c1])(sus.movementX))
-    testStore2.update(R.assocPath([key,field], f, {}))
-
-    let fh = add(U.scale([0, macro_w], ['0', MAX_H])(sus.movementX))
-    //hStore.update(R.assocPath([key],fh))
-   
-    let f_update;
-    // OBSERVER FOR MACRO THUMB DRAG
-    if (atk.target.classList.contains('macro-thumb')) {
-      let [from, to] = [
-        [0, macro_w],
-        ['0', MAX_H],
-      ];
-      // @ts-ignore
-      f_update = R.pipe(U.clamp(['0', MAX_H]), add(U.scale(from, to)(sus.movementX * 0.1)));
-      if (atk.target.id == 'h_r') {
-        $hr = f_update($hr);
-        $hrX_f = [$hrX, $hrX_f[1]];
+  function drag_effect({ atk, sus }) {
+    let [store, key, field] = [atk.target.dataset.store, atk.target.dataset.key, atk.target.dataset.field]
+    if(store == "h"){
+      let fh = add(U.scale([0, macro_w], ['0', MAX_H])(sus.movementX))
+      if(field == "a"){
+        H0.update(fh)
       }
-      if (atk.target.id == 'h_t') {
-        $ht = f_update($ht);
-        $htX_f = R.assoc([0], $htX, $htX_f);
+      if(field == "b"){
+        H1.update(fh)
       }
+    }
+    if(store == 'x'){
+      let f = add(U.scale([0, track_w], [$testStore2[key].c0,$testStore2[key].c1])(sus.movementX))
+      testStore2.update(R.assocPath([key,field], f, {}))
     }
   }
 
@@ -280,6 +213,10 @@
     let f = x=>curr/prev*x
     testStore2.updateField('z',R.map(R.always(f),$testStore2))
     zf = curr
+
+    // let lensZ = U.lerpLens('z', obj => [0,obj.c1-obj.c0],[0,1])
+    // testStore2.set(R.map(R.over(lensZ,f),get(P)))
+ 
   }
 
   let hit_;
@@ -301,7 +238,7 @@
       K.merge([mousemove_.thru(S.obs(move_feedback)), counterPlus_]),
       mouseup_
     )
-      .thru(S.obs(drag_effect2))
+      .thru(S.obs(drag_effect))
       .thru(S.obs(drag_feedback));
     hit_ = mousedown_.map((e) => R.assoc('targets', document.elementsFromPoint(e.x, e.y), e));
    
@@ -414,9 +351,11 @@
           <div class="param-name">Macro #2 (Global exploration)</div>
           <div class="track" bind:clientWidth={macro_w}>
             <div
+              data-store='h'
+              data-field="b"
               id="h_r"
               class="macro-thumb"
-              style="left:{hr_render * macro_w}px; width:{thumb_w}px"
+              style="left:{H1_render * macro_w}px; width:{thumb_w}px"
             />
           </div>
         </div>
@@ -425,9 +364,11 @@
           <div class="param-name">Macro #2 (Local exploration)</div>
           <div class="track">
             <div
+              data-store='h'
+              data-field="a"
               id="h_t"
               class="macro-thumb"
-              style="left:{ht_render * macro_w}px; width:{thumb_w}px"
+              style="left:{H0_render * macro_w}px; width:{thumb_w}px"
             />
           </div>
         </div>
@@ -439,7 +380,7 @@
             <div class="param-name" data-key={key}>{key}</div>
             <div style="width:10px">{val.c0}</div>
             <div class="track" bind:clientWidth={track_w}>
-              <div data-key={key} data-field={"b"} class="range"
+              <div data-key={key} data-field="b" data-store='x' class="range"
                 style="width:{(track_w * val.z) / (val.c1 - val.c0)}px; 
                   left:{(track_w * (val.b-val.z / 2 - val.c0))/(val.c1-val.c0)}px;"
                 bind:clientWidth={range_w}
@@ -447,7 +388,7 @@
               <div class="middle" 
                 style="width:{2}px; left:{(track_w * (val.b - val.c0)) /(val.c1 - val.c0)}px;"
               />
-              <div data-key={key} data-field={"a"} class="thumb"
+              <div data-key={key} data-field="a" data-store='x' class="thumb"
                 style="left:{(track_w * (val.a - val.c0))/(val.c1 - val.c0)}px; width:{thumb_w}px"
                 bind:clientWidth={thumb_w}
               />

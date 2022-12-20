@@ -13,6 +13,7 @@ type num = number
 
 let f32a = Float32Array;
 let u32a = Uint32Array;
+let [fMAX_H, MAX_A] = [dim => W.max_hilbert(32, dim), Math.pow(2, 32) - 1];
 
 //The arguments are named "monad" and "comonad" but it is probably an abuse of language
 //The following is basically a bidirectional mapping between two stores.
@@ -80,7 +81,7 @@ export function sync(left, right) {
 }
 
 
-function solve(u: P<E<num>>, o: P<num>, epsilon = 0.01, ZboundedByC0C1 = true, ZscalesWithC0C1 = false, BboundedByC0C1 = true, BscalesWithC0C1 = false ) {
+function solve(u: P<E<num>>, o: P<num>, epsilon = 0.01, ZboundedByC0C1 = true, ZscalesWithC0C1 = false, BboundedByC0C1 = true, BscalesWithC0C1 = false) {
 	let fields: string[] = ["a", "z", "b", "c0", "c1"]
 	let undefinedToIdentity: (x: E<num> | undefined) => E<num> = x => { return x == undefined ? R.identity : x }
 	let [fa, fz, fb, fc0, fc1]: E<num>[] = R.map(undefinedToIdentity, R.props(fields, u))
@@ -116,25 +117,25 @@ function solve(u: P<E<num>>, o: P<num>, epsilon = 0.01, ZboundedByC0C1 = true, Z
 	return res
 }
 
-function liftSolve(solver,X:P<P<num>>, F:P<P<E<num>>>){
-	let recordFXsolved = R.mapObjIndexed((f:P<E<num>>,key)=>solver(f,X[key]),F)
+function liftSolve(solver, X: P<P<num>>, F: P<P<E<num>>>) {
+	let recordFXsolved = R.mapObjIndexed((f: P<E<num>>, key) => solver(f, X[key]), F)
 	return R.evolve(recordFXsolved)
 }
 
-export function liftedConstraintStore(data: Array<[string, P<num>]>, _epsilon: number = 0.01, defaultArg:P<num> = { a: 5, z: 10, b: 5, c0: 0, c1: 10 }) {
+export function liftedConstraintStore(data: Array<[string, P<num>]>, _epsilon: number = 0.01, defaultArg: P<num> = { a: 5, z: 10, b: 5, c0: 0, c1: 10 }) {
 	//initialize object with default args in each field.
-	let dataObj:P<P<num>>= R.fromPairs(data)
-	let X0:P<P<num>> = R.map(R.always(defaultArg), dataObj)
-	let F0 = U.deepMap(R.always,dataObj)
-	const SR: Writable<P<P<num>>> = writable(liftSolve(solve,X0, F0)(X0)) //store of records
-	const Index: Writable<string[]> = writable(R.map(x=>x[0], data))
+	let dataObj: P<P<num>> = R.fromPairs(data)
+	let X0: P<P<num>> = R.map(R.always(defaultArg), dataObj)
+	let F0 = U.deepMap(R.always, dataObj)
+	const SR: Writable<P<P<num>>> = writable(liftSolve(solve, X0, F0)(X0)) //store of records
+	const Index: Writable<string[]> = writable(R.map(x => x[0], data))
 
 	function set_S(X: P<P<num>>) {
-		update_S(U.deepMap(R.always,X))
+		update_S(U.deepMap(R.always, X))
 	}
 
 	function update_S(F: P<P<E<num>>>) {
-		SR.update(liftSolve(solve,get(SR), F))
+		SR.update(liftSolve(solve, get(SR), F))
 	}
 
 	function dropKeys(keys) {
@@ -142,75 +143,101 @@ export function liftedConstraintStore(data: Array<[string, P<num>]>, _epsilon: n
 		Index.update(x => R.without(keys, x))
 	}
 
-	function update_field(field:string, F) {
-		SR.update(liftSolve(solve,get(SR), R.mapObjIndexed((val:E<number>)=>R.objOf(field,val),F)))
-	}	
+	function update_field(field: string, F) {
+		SR.update(liftSolve(solve, get(SR), R.mapObjIndexed((val: E<number>) => R.objOf(field, val), F)))
+	}
 
-	function setWithLens(field:string, rec:P<number>) {
-		let setters = R.mapObjIndexed((recEntry,key) => R.set(U.scaleLens(field),recEntry,get(SR)[key]),rec)
+	function setWithLens(rec: P<number>, lens) {
+		let setters: P<P<num>> = R.mapObjIndexed((recEntry, key) => R.set(lens, recEntry, get(SR)[key]), rec)
 		set_S(setters)
-	}	
-	
-	function updateWithLens(field:string, rec:P<E<number>>) {
-		let setters = R.mapObjIndexed((recEntry,key) => R.over(U.scaleLens(field),recEntry,get(SR)[key]),rec)
+	}
+
+	function updateWithLens(rec: P<E<number>>, lens) {
+		let setters = R.mapObjIndexed((recEntry, key) => R.over(lens, recEntry, get(SR)[key]), rec)
 		set_S(setters)
-	}	
+	}
 
 	return [
-		{ subscribe: SR.subscribe, set: set_S, update: update_S, remove: dropKeys, setWithLens:setWithLens, updateField:update_field},
-		{subscribe: Index.subscribe, set: Index.set, update: Index.update}
+		{ subscribe: SR.subscribe, set: set_S, update: update_S, remove: dropKeys, setWithLens: setWithLens, updateField: update_field },
+		{ subscribe: Index.subscribe, set: Index.set, update: Index.update }
 	]
 }
 
-export function museliStore(data: Array<[string, P<num>]>, initA:string, initB:string){
-	const bits:number = 32
-	let forward: (n:string,L:number, b:number) => number[] = (n,L,b) => W.forward(n, b, L)
-	let inverse: (X:number[],b:number) => string = (X,b) => W.inverse(u32a.from(X), b)
+export function muesliStore(data: Array<[string, P<num>]>) {
+	let bits: number = 32
+	let MAX_H = fMAX_H(data.length)
+	let MAX_X = Math.pow(2,32)-1
+	let forward: (n: string, L: number, b: number) => number[] = (n, L, b) => W.forward(n, b, L)
+	let inverse: (X: number[], b: number) => string = (X, b) => W.inverse(u32a.from(X), b)
+	let lensA = U.lerpLens('a', obj => [obj.b - obj.z / 2, obj.b + obj.z / 2],[0,MAX_X])
+	let lensB = U.lerpLens('b', obj => [obj.c0, obj.c1],[0,MAX_X])
+	let lensZ = U.lerpLens('z', obj => [0,obj.c1-obj.c0],[0,100])
 
 	let h_forward, h_inverse;
-	let [MAX_H, MAX_A] = [W.max_hilbert(32, data.length), Math.pow(2, 32) - 1];
-	
-	let H: Record<string,Writable<string>> = {a:writable(initA), b:writable(initB)}
-	let B:Writable<number> = writable(32)
-	let valI:string[]
+
+
+	let Ha = writable(W.biguint_prod(0.5, MAX_H, 100))
+	let Hb = writable(W.biguint_prod(0.5, MAX_H, 100))
+	let B: Writable<number> = writable(32)
+	let valI: string[]
 	const [P, I] = liftedConstraintStore(data)
-	I.subscribe(i=>{
+
+	I.subscribe(i => {
 		valI = i
 		h_forward = n => W.forward(n, get(B), i.length)
 		h_inverse = X => W.inverse(u32a.from(X), get(B))
 	})
 
-	B.subscribe(b=>{
+	B.subscribe(b => {
+		bits = b;
 		h_forward = n => W.forward(n, b, valI.length)
 		h_inverse = X => W.inverse(u32a.from(X), b)
 	})
 
-	function setH(field:string){
-		return function(h:string){
-			H[field].set(U.clamp(['0', MAX_H])(h))
-			let hx:P<number> = R.zipObj(valI,forward(h,length,bits))
-			P.setWithLens(field,hx)
-		}
+	function setHa(h: string) {
+		updateHa(R.always(U.clamp(['0', MAX_H])(h)))
 	}
 
-	function updateH(field:string){
-		return function(f_h){
-			H[field].update(x=>U.clamp(['0', MAX_H])(f_h(x)))
-			let hx:P<number> = R.zipObj(valI,forward(get(H[field]),length,bits))
-			P.setWithLens(field,hx)
-		}
+	function setHb(h: string) {
+		updateHb(R.always(U.clamp(['0', MAX_H])(h)))
 	}
 
-	function setP(X){
+	function updateHa(f_h) {
+		Ha.update(x => U.clamp(['0', MAX_H])(f_h(x)))
+		let hx: P<number> = R.zipObj(valI, forward(get(Ha), 19, 32))
+		P.set(R.mergeWith(R.set(lensA), hx, get(P)))
+	}
+
+	function updateHb(f_h) {
+		Hb.update(x => U.clamp(['0', MAX_H])(f_h(x)))
+		let hx: P<number> = R.zipObj(valI, forward(get(Hb), 19, 32))
+		P.set(R.mergeWith(R.set(lensB), hx, get(P)))
+	}
+
+	function setP(X) {
 		P.set(X);
-		//TODO: get a and b for each key, scale them and assign them to h1, h2
-	}	
+		let h1_setters = R.mapObjIndexed(x=>R.view(lensB,x),X)
 
+		let h0_setters =  R.mapObjIndexed(x=>R.view(lensA,x),X)
+	}
 
-	function updateP(){}	
+	function updateP(X) {
+		P.update(X)
+		let hb_setters = R.mapObjIndexed(R.view(lensB),get(P))
+		let ha_setters =  R.mapObjIndexed(R.view(lensA),get(P))
+		let fooa = R.map(key=>ha_setters[key],valI)
+		let foob =  R.map(key=>hb_setters[key],valI)
+		console.log("fooa "+inverse(fooa,32))
+		console.log("foob "+inverse(foob,32))
+		setHa(inverse(fooa,32))
+		setHb(inverse(foob,32))
+		// console.log(fooa)
+		// console.log(inverse(foob,32))
+	}
 	return [
-		{subscribe: H['b'].subscribe, set: setH('b'), update: updateH('b')},
-		{subscribe: H['a'].subscribe, set: setH('a'), update: updateH('a')},
-		{subscribe: P.subscribe, set: setP, update: updateP},
+		{ subscribe: Hb.subscribe, set: setHb, update: updateHb },
+		{ subscribe: Ha.subscribe, set: setHa, update: updateHa },
+		{ subscribe: P.subscribe, set: setP, update: updateP, updateField: P.updateField },
+		{ subscribe: I.subscribe, set: I.set, update: I.update },
 	]
 }
