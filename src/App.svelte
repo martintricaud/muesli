@@ -2,8 +2,8 @@
   //import { scale } from './lib/utils2.ts';
   import { onMount, afterUpdate } from 'svelte';
   import { get } from 'svelte/store';
-  import { sync, random_adjunction, liftedConstraintStore, muesliStore } from './lib/stores';
-  import { shiftdown_, shiftup_, mouseup_, mousedown_, mousemove_, mouseleave_, mousewheel_, asr } from './lib/utils-streams.js';
+  import {random_adjunction,muesliStore2, liftSolve, solve} from './lib/stores';
+  import { shiftdown_, shiftup_, mouseup_, mousedown_, mousemove_, mouseleave_, mousewheel_, asr, counterMinus_ } from './lib/utils-streams.js';
   import { synth2, preset2, preset2bis } from './lib/data.js';
   import { wasm_functions as W } from './main.js';
   import * as U from './lib/utils';
@@ -16,136 +16,50 @@
   import SetFeedback from './lib/SetFeedback.svelte';
   import { prng_alea } from 'esm-seedrandom';
 
-  // SHORTHANDS
-  let f32a = Float32Array;
-  let u32a = Uint32Array;
-
   // BINDINGS FOR DOM ELEMENTS AND THEIR SIZES
 
   let currentPreset = preset2;
   let presets = [];
 
-  let [MAX_H, MAX_A] = [W.max_hilbert(32, currentPreset.length), Math.pow(2, 32) - 1];
-  let iw,
-    ih,
-    macro_w,
-    track_w,
-    range_w,
-    thumb_w = 5;
+  let iw, ih, macro_w, track_w, range_w, thumb_w = 5;
   let zf = 0.2; //Zoom Factor
 
   let instruments = {
-    hold: { active: false, component: InfoBox, ev: { x: 0 } },
-    pin: { active: false, component: InfoBox, ev: { x: 0 } },
-    eraser: { active: false, component: InfoBox, ev: { x: 0 } },
-    grab: { active: false, component: GrabFeedback, ev: { x: null } },
-    set: { active: false, component: SetFeedback, ev: { x: null } },
-    none: { active: true, component: InfoBox, ev: { x: 0 } },
+    hold: { equipped: false, component: InfoBox, event: { x: 0 }, feedforward: "willHold" },
+    pin: { equipped: false, component: InfoBox, event: { x: 0 }, feedforward: "willPin"},
+    eraser: { equipped: false, component: InfoBox, event: { x: 0 }, feedforward: "willErase" },
+    grab: { equipped: false, component: GrabFeedback, event: { x: null }, feedforward: "willGrab" },
+    set: { equipped: false, component: SetFeedback, event: { x: null }, feedforward: "willSet" },
+    none: { equipped: true, component: InfoBox, event: { x: 0 }, feedforward: "willNone" },
   };
-  $: activeInstrument = R.keys(R.pickBy((x, key) => x.active, instruments))[0];
-  //UTILITIES
 
-  let nameAs = (name) => (x) => R.assoc(name, x, { m: 0, M: MAX_A });
+  $: equipped = R.keys(R.pickBy((x, key) => x.equipped, instruments))[0];
+  $: ff = instruments[equipped].feedforward
 
-  let lerp = (A, B) => (x) => U.scale(A, B)(x) + B[0];
-
-  function plus(a, b) {
-    if (typeof a === 'number') {
-      return a + b;
-    } else return W.bigint_sum(a, b);
-  }
-
-  function add(b) {
-    return (a) => plus(a, b);
-  }
-
-  //LOADING PARAMETER PRESETS
-  let ax = currentPreset.map((a) => a[0]);
-  let data = R.fromPairs(currentPreset);
-
-  // DEFINING CONSTANTS
-  const mM = (x) => R.props(['m', 'M'], x);
-  const c0c1 = (x) => R.props(['c0', 'c1'], x);
-  const v = (x) => R.props(['v'], x);
-  const L = (x) => R.props(['locked'], x);
-
-  const Lr = (x) => R.prop('Lr', x);
-  const Lt = (x) => R.prop('Lt', x);
-  const view = (lenses, x) => R.lift(R.pipe(...lenses))(x);
-  //f is a function that turns b into a function
-
-
-  //  // TWO WAY BINDINGS
-
-  let hilbert_adjunction = (axes, b) => [
-    (n) => R.zipObj(axes, W.forward(n, b, axes.length)),
-    (X) => W.inverse(u32a.from(R.map((k) => X[k], axes)), b),
-  ];
-
-
-  let remapping_adjunction = [
-    ([h_axes, ctx]) => [U.o2o(ctx)(h_axes)(U.lerp_AB([0, MAX_A])), ctx],
-    ([scaled_coordinates, ctx]) => [U.o2o(ctx)(scaled_coordinates)(U.lerp_BA([0, MAX_A])), ctx],
-  ];
-
-  let [H0,H1,testStore2,index] = muesliStore(preset2bis);
-  let [hr, hrX] = sync(...hilbert_adjunction(ax, 32));
-  let [ht, htX] = sync(...hilbert_adjunction(ax, 32));
-  //let [ht, htX] = sync(...random_adjunction(ax))
-
-  $hr = W.biguint_prod(0.5, MAX_H, 100);
-  $ht = W.biguint_prod(0.5, MAX_H, 100);
-
-  let [hrX_f, r_data] = sync(...remapping_adjunction);
-  //let rScaled = sync(...remapping_adjunction);
-
-  $: $hrX_f = [R.mergeDeepWith(R.call, view([Lr], data), $hrX), view([mM, U.zoom(zf)], data)];
-
-  $: t_tracks = R.mergeDeepWith(
-    U.offset,
-    view([mM, U.thick(zf)], data),
-    R.mergeDeepWith(R.call, view([Lr], data), $r_data[0])
-  );
-
-  // THUMB SLIDERS
-
-  let [htX_f, t_data] = sync(...remapping_adjunction);
-
-  $: $htX_f = [R.mergeDeepWith(R.call, view([Lt], data), $htX), t_tracks];
-
-  // RENDERING TO THE DOM
-  $: r_render = (k) =>
-    U.lerp(view([mM], data)[k], [0, track_w])(view([Lr], data)[k]($r_data[0][k]));
-  $: t_render = (k) => U.lerp_AB(view([mM], data)[k])([0, track_w])($t_data[0][k]);
-  $: hr_render = W.rescale_index($hr, 32, currentPreset.length);
-  $: ht_render = W.rescale_index($ht, 32, currentPreset.length);
-  $: H0_render = W.rescale_index($H0, 32, currentPreset.length);
-  $: H1_render = W.rescale_index($H1, 32, currentPreset.length);
+  let muesli = muesliStore2(preset2bis);
+  $: [H_global,H_local,P,Keys, B] = muesli
 
   // STREAMS AND THEIR OBSERVERS
-  let drag_, cursorInfo_, click_, wheel_, move_, pool_, pool2_, counterPlus_;
-  drag_ = cursorInfo_ = click_ = counterPlus_ = wheel_ = move_ = pool_ = pool2_ = undefined;
+  let drag_, cursorInfo_, click_, wheel_, move_, pool_, pool2_, counterPlus_, incrementers, decrementers;
+  drag_ = cursorInfo_ = click_ = counterPlus_ = wheel_ = move_ = pool_ = pool2_ = incrementers= decrementers = undefined;
 
-  function savePreset(val) {
+  function save_effect(val) {
     console.log('saved ' + U.smallestPresetAvailable(R.pluck(['name'], presets)));
     presets = R.append({name: U.smallestPresetAvailable(R.pluck(['name'], presets)),
         data: {},
-        h0: '',
-        h1: '',
+        H_global: '',
+        H_local: '',
       },
       presets
     );
   }
 
-  function move_feedback(e) {
-    instruments[activeInstrument]['ev'] = e;
-  }
-  function drag_feedback(e) {
-    instruments[activeInstrument]['ev'] = e;
+  function feedback(e) {
+    instruments[equipped]['event'] = e;
   }
 
   function handleClick(lock, k) {
-    // if (instruments[0].active) {
+    // if (instruments[0].equipped) {
     //   let val
     //   if (lock == 'Lr') {
     //     val =$r_data[0][k];
@@ -156,46 +70,33 @@
     // }
   }
 
-  function dragger_feedforward() {
-    //if the target is compatible, change the display of the target, i.e. add
-  }
-
   // EFFECTFUL FUNCTIONS - modify reactive values, can be thought of has handlers
 
   function equip_effect(name) {
     instruments = R.mapObjIndexed(
-      (x, k) =>
-        k == name ? R.modify('active', (a) => !a, x) : R.modify('active', (a) => false, x),
-      instruments
-    );
-    activeInstrument = R.keys(R.pickBy((x, key) => x.active, instruments))[0];
+      (x, k) => R.modify('equipped', k == name ? R.not : R.F, x), instruments );
   }
 
-
-  function zoom_effect(){
-
-  }
-
-  function erase_effect(store,key){
-    // let [store, key] = [atk.target.dataset.store, atk.target.dataset.key]
-    store.remove([key])
+  function click_effect(atk){
+    if(equipped == "eraser"){  
+      muesli?.[atk.target.dataset?.store]?.update(R.omit([atk.target.dataset?.key]))
+      //todo: replace with R.dissocPath(['a', 'b', 'c'], {a: {b: {c: 42}}})
+    }
+    else if(equipped == "lock"){}
+    
   }
 
   function drag_effect({ atk, sus }) {
-    let [store, key, field] = [atk.target.dataset.store, atk.target.dataset.key, atk.target.dataset.field]
-    if(store == "h"){
-      let fh = add(U.scale([0, macro_w], ['0', MAX_H])(sus.movementX))
-      if(field == "a"){
-        H0.update(fh)
-      }
-      if(field == "b"){
-        H1.update(fh)
-      }
+    const [store, key, field] = [atk.target.dataset?.store, atk.target.dataset?.key, atk.target.dataset?.field]
+    let f
+    if(store == 0 || store ==1){
+      f = U.add(U.scale([0, track_w], ['0', U.fMAX_H(32, 20)])(sus.movementX))
     }
-    if(store == 'x'){
-      let f = add(U.scale([0, track_w], [$testStore2[key].c0,$testStore2[key].c1])(sus.movementX))
-      testStore2.update(R.assocPath([key,field], f, {}))
+    if(store == 2){
+      let f0 = U.add(U.scale([0, track_w], [$P[key].c0,$P[key].c1])(sus.movementX))
+      f = liftSolve(solve, $P, U.deepObjOf([key,field],f0))
     }
+    muesli?.[store]?.update(f)
   }
 
   function shiftdown_effect(val) {
@@ -208,26 +109,24 @@
   }
 
   function wheel_effect({atk,sus}) {
-    let prev = zf
-    let curr = R.clamp(0.0000001, 1, zf + U.scale([0, ih * 100], [0.0000001, 1])(sus.wheelDeltaY));
-    let f = x=>curr/prev*x
-    testStore2.updateField('z',R.map(R.always(f),$testStore2))
+    let curr = R.clamp(
+      0.0000001, 1, zf + U.scale([0, ih * 100], [0.0000001, 1])(sus.wheelDeltaY));
+    let f = x=>curr/zf*x
+    muesli[2].update(liftSolve(solve, $P, R.map(R.always(R.objOf('z',f)),$P)))
     zf = curr
-
-    // let lensZ = U.lerpLens('z', obj => [0,obj.c1-obj.c0],[0,1])
-    // testStore2.set(R.map(R.over(lensZ,f),get(P)))
- 
   }
 
   let hit_;
 
   onMount(() => {
-    console.log('App');
-    pool_ = K.pool();
-    pool_.plug(S.mouseup_);
-    pool_.plug(S.mouseleave_(document.getElementById('test')));
-    counterPlus_ = S.counterPlus_(document.getElementById('test'), pool_);
-    move_ = mousemove_.thru(S.obs(move_feedback));
+    pool_ = K.pool().plug(S.mouseup_);
+    R.forEach(el => pool_.plug(S.mouseleave_(el)), document.getElementsByClassName('plus'))
+    incrementers = R.map(el=> S.counterPlus_(el, pool_), document.getElementsByClassName('plus'))
+    R.forEach(el => pool_.plug(S.mouseleave_(el)), document.getElementsByClassName('minus'))
+    decrementers = R.map(el=> S.counterPlus_(el, pool_), document.getElementsByClassName('minus'))
+
+    move_ = mousemove_.thru(S.obs(feedback));
+
     shiftdown_.thru(S.obs(shiftdown_effect));
     shiftup_.thru(S.obs(shiftup_effect));
     wheel_ = 
@@ -235,49 +134,31 @@
         .thru(S.obs(wheel_effect));
     drag_ = asr(
       mousedown_,
-      K.merge([mousemove_.thru(S.obs(move_feedback)), counterPlus_]),
+      K.merge([move_, K.merge(incrementers)]),
       mouseup_
     )
       .thru(S.obs(drag_effect))
-      .thru(S.obs(drag_feedback));
+      .thru(S.obs(feedback));
     hit_ = mousedown_.map((e) => R.assoc('targets', document.elementsFromPoint(e.x, e.y), e));
-   
-    //the handler of drag_ is the drag_handler of the equipped instrument
   });
 </script>
 
-<svelte:window bind:innerWidth={iw} bind:innerHeight={ih} />
+<svelte:window bind:innerHeight={ih} bind:innerWidth={iw}/>
 <main>
-  {#each Object.entries(instruments) as [name, { active, component, color, ev }]}
-    <div
-      id="ctr"
-      style="position:fixed; width:0; height:0; z-index:100"
-      class="container"
-      class:inactive={!active}
-    >
-      <svelte:component this={instruments[name].component} {ev} {ih} {iw} {name} />
-    </div>
+  {#each Object.entries(instruments) as [name, { equipped, component, event }]}
+      <svelte:component this={component} {equipped} {event} {name} />
   {/each}
   <div class="menu">
     <div class="instrument-palette">
-      {#each Object.entries(instruments) as [name, { active, component, color, ev }]}
-        <button class:active on:click={() => equip_effect(name)}>{name}</button>
+      {#each Object.entries(instruments) as [name, {equipped}]}
+        <button class:equipped on:click={() => equip_effect(name)}>{name}</button>
       {/each}
     </div>
-    <div id="test" style="background-color:blue">ok</div>
-    <div id="" />
     <div class="presets">
-      <button on:click={savePreset}>save</button>
+      <button on:click={save_effect}>save</button>
       {#if presets.length > 0}
         {#each presets as { name, data, h0, h1 }}
-          <span
-            class="preset"
-            role="textbox"
-            bind:textContent={name}
-            aria-multiline="false"
-            contenteditable>{name}</span
-          >
-          <!-- <input class="renamable" type="text" bind:value={name} disabled/> -->
+          <span class="preset {ff}">{name}</span>
         {/each}
       {/if}
     </div>
@@ -285,116 +166,49 @@
   <div class="app">
     <div class="ui">
       <div class="slider-container" id="macro-sliders">
-        <div class="slider macro-slider">
+        <div class="slider">
           <div class="param-name">Macro #2 (Global exploration)</div>
           <div class="track" bind:clientWidth={macro_w}>
             <div
-              id="h_r"
-              class="macro-thumb"
-              style="left:{hr_render * macro_w}px; width:{thumb_w}px"
-            />
-          </div>
-        </div>
-
-        <div class="slider macro-slider">
-          <div class="param-name">Macro #2 (Local exploration)</div>
-          <div class="track">
-            <div
-              id="h_t"
-              class="macro-thumb"
-              style="left:{ht_render * macro_w}px; width:{thumb_w}px"
-            />
-          </div>
-        </div>
-      </div>
-      <div class="slider-container" id="all-sliders">
-        <!-- The list of individual sliders is generated by iterating over the store containing sliders data-->
-        {#each currentPreset as [k, { m, M, fullname, Lr, Lt }]}
-          <div class="slider">
-            <div class="param-name">{fullname}</div>
-            <input type="number" class="bound" bind:value={m} />
-            <div data-id={k} class="track" bind:clientWidth={track_w}>
-              <div
-                data-id={k}
-                id={k + 'range'}
-                class:preview={k.includes('os')}
-                class:locked={k.length != 0}
-                class="range slider"
-                style="width:{zf * track_w}px;
-                  left:{r_render(k) - (zf * track_w) / 2}px;"
-                bind:clientWidth={range_w}
-                on:click={() => handleClick('Lr', k)}
-              />
-              <div
-                class="middle"
-                data-id={k}
-                style="width:{2}px;
-                left:{r_render(k) - 1}px;"
-              />
-              <div
-                data-id={k}
-                id={k + 'thumb'}
-                class:preview={k.includes('os')}
-                class:locked={k.length != 0}
-                class="thumb slider"
-                style="left:{t_render(k) - thumb_w / 2}px; width:{thumb_w}px"
-                bind:clientWidth={thumb_w}
-                on:click={() => handleClick('Lt', k)}
-              />
-            </div>
-            <input type="number" class="bound" bind:value={M} />
-          </div>
-        {/each}
-      </div>
-      <div class="slider-container" id="macro-sliders">
-        <div class="slider macro-slider">
-          <div class="param-name">Macro #2 (Global exploration)</div>
-          <div class="track" bind:clientWidth={macro_w}>
-            <div
-              data-store='h'
+              data-store=0
+              data-key='h'
               data-field="b"
-              id="h_r"
-              class="macro-thumb"
-              style="left:{H1_render * macro_w}px; width:{thumb_w}px"
+              class="thumb"
+              style="left:{W.rescale_index($H_global, 32, 20) * macro_w}px; width:{thumb_w}px"
             />
           </div>
         </div>
-
-        <div class="slider macro-slider">
+        <div class="slider">
           <div class="param-name">Macro #2 (Local exploration)</div>
           <div class="track">
             <div
-              data-store='h'
-              data-field="a"
-              id="h_t"
-              class="macro-thumb"
-              style="left:{H0_render * macro_w}px; width:{thumb_w}px"
+              data-store=1 data-key='h' data-field="a" class="thumb"
+              style="left:{W.rescale_index($H_local, 32, 20) * macro_w}px; width:{thumb_w}px"
             />
           </div>
         </div>
       </div>
       <div class="slider-container" id="all-sliders">
         <!-- The list of individual sliders is generated by iterating over the store containing sliders data-->
-        {#each Object.entries($testStore2) as [key, val]}
-          <div class="slider">
-            <div class="param-name" data-key={key}>{key}</div>
-            <div style="width:10px">{val.c0}</div>
+        {#each Object.entries($P) as [key, p]}
+          <div class="slider {ff}" on:click={click_effect} data-key={key} data-store=2>
+            <div class="param-name {ff}" data-key={key} data-store=2>{key}</div>
             <div class="track" bind:clientWidth={track_w}>
-              <div data-key={key} data-field="b" data-store='x' class="range"
-                style="width:{(track_w * val.z) / (val.c1 - val.c0)}px; 
-                  left:{(track_w * (val.b-val.z / 2 - val.c0))/(val.c1-val.c0)}px;"
+              <div data-store=2 data-key={key} data-field="b" class="range"
+                style="width:{(track_w * p.z) / (p.c1 - p.c0)}px; 
+                  left:{(track_w * (p.b-p.z / 2 - p.c0))/(p.c1-p.c0)}px;"
                 bind:clientWidth={range_w}
               />
               <div class="middle" 
-                style="width:{2}px; left:{(track_w * (val.b - val.c0)) /(val.c1 - val.c0)}px;"
+                style="width:{2}px; left:{(track_w * (p.b - p.c0)) /(p.c1 - p.c0)}px;"
               />
-              <div data-key={key} data-field="a" data-store='x' class="thumb"
-                style="left:{(track_w * (val.a - val.c0))/(val.c1 - val.c0)}px; width:{thumb_w}px"
+              <div data-store=2 data-key={key} data-field="a"  class="thumb"
+                style="left:{(track_w * (p.a - p.c0))/(p.c1 - p.c0)}px; width:{thumb_w}px"
                 bind:clientWidth={thumb_w}
               />
             </div>
-            <div style="width:10px">{val.c1}</div>
-            <!-- <span>{key}</span><span>---</span> <span>{Object.values(val)}</span> -->
+            <div class="bound c0">{p.c0}</div>
+            <div class="bound c1">{p.c1}</div>
           </div>
         {/each}
       </div>
@@ -413,7 +227,7 @@
   .container {
     background-color: rgba(0, 0, 0, 0);
   }
-  .active {
+  .equipped {
     filter: contrast(50%) saturate(50%) opacity(70%);
   }
   .locked {
@@ -425,5 +239,24 @@
 
   .inactive {
     display: none;
+  }
+  
+  .willErase{}
+
+  .willErase:hover{
+    background-color: rgba(255,0,0,0.2);
+    filter:brightness(150%) saturate(70%);
+    border: 3px solid red;
+    box-sizing: content-box;
+  }
+
+  .willSet{
+    
+  }
+  .willSet:hover{
+    background-color: rgba(0,0,255,0.2);
+    filter:brightness(150%) saturate(70%);
+    border: 3px solid blue;
+    box-sizing: content-box;
   }
 </style>

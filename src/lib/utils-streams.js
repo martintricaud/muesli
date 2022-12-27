@@ -20,7 +20,7 @@ e_.map(e=>R.assoc('capture',value,e)).flatMap((e) =>
   Kefir.constant(e)
 );
 
-(e) => R.assoc('targets', document.elementsFromPoint(e.x, e.y), e)
+// (e) => R.assoc('targets', document.elementsFromPoint(e.x, e.y), e)
 
 export const asr = (a_, s_, r_) =>
 a_.flatMap((a) =>
@@ -29,22 +29,14 @@ a_.flatMap((a) =>
     .takeUntilBy(r_)
 );
 
-
-
 export const counterPlus_ = (el,end) => Kefir.fromEvents(el, 'mouseenter').flatMap(
-  (e)=>Kefir.interval(10,{movementX:10}).takeUntilBy(end))
+  (e)=>Kefir.interval(10,{movementX:0}).takeUntilBy(end))
 
 export const counterMinus_ = (el,end) => Kefir.fromEvents(el, 'mouseenter').flatMap(
-    (e)=>Kefir.interval(10,{movementX:10}).takeUntilBy(end))
+    (e)=>Kefir.interval(10,{movementX:0}).takeUntilBy(end))
 
-export const counter2_ = (start,end) => start.flatMap(
-  (e)=>{
-    let m = e.target.dataset.machine;
-    //machine should be an incrementer or a decrementer
-    //something like: (stepsize)=>{movementX:-stepsize}
-    return Kefir.interval(10,{movementX:10}).takeUntilBy(end)
-
-})
+export const machine = (el,end) => Kefir.fromEvents(el, 'mouseenter').flatMap(
+      (e)=>Kefir.interval(10,{movementX:0}).takeUntilBy(end))
   
 
 export const mouseleave_ = el => Kefir.fromEvents(el, 'mouseleave')
@@ -57,10 +49,10 @@ export const mousewheel_= Kefir.fromEvents(window,'wheel');
 
 
 
-export const applyDelta = (xy)=>{
-  let b = g=>{return {x:val=>val+g(xy.movementX),  y:val=>val+g(xy.movementY)}}
-  let a = {...xy, applyDelta:b}
-  return a
-}
+// export const applyDelta = (xy)=>{
+//   let b = g=>{return {x:val=>val+g(xy.movementX),  y:val=>val+g(xy.movementY)}}
+//   let a = {...xy, applyDelta:b}
+//   return a
+// }
 
 export const obs = f => x => x.onValue(val=>f(val))

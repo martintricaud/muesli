@@ -1,9 +1,9 @@
 
 :root {
   font-family: monospace;
-  font-size: 16px;
+  font-size: 1.2em;
+  font-weight: 500;
   line-height: 24px;
-  font-weight: 400;
   color: black;
   background-color: #eee;
   font-synthesis: none;
@@ -13,9 +13,14 @@
   -webkit-text-size-adjust: 100%;
 }
 
+input:focus,
+select:focus,
+textarea:focus,
+button:focus {
+    outline: none;
+}
 
 a {
-  font-weight: 500;
   color: #646cff;
   text-decoration: inherit;
 }
@@ -69,7 +74,7 @@ h1 {
   opacity: 100; 
   background-color: rgba(61, 61, 61, 0.7);
   backdrop-filter: blur(3px) grayscale(60%);
- 
+  color:white
 }
 
 .converter {
@@ -82,8 +87,7 @@ h1 {
 
 button, .preset {
   padding: 0.5em 0.5em;
-  font-size: 1em;
-  font-weight: 500;
+
   font-family: inherit;
   background-color: inherit;
   outline: 2px outset #d6e0ea;
@@ -94,7 +98,8 @@ button, .preset {
 }
 
 button:hover, .preset:hover {
-  filter: contrast(200%) brightness(150%)
+  filter: contrast(200%) brightness(150%);
+  font-weight: bold;
 }
 
 button:focus {
@@ -113,8 +118,6 @@ button:focus-visible {
 
 label {
   padding: 0.5em 0.5em;
-  font-size: 1em;
-  font-weight: 500;
   font-family: inherit;
   cursor: pointer;
   transition: border-color 0s;
@@ -125,8 +128,6 @@ input[type=number] {
   color: white;
   background-color: rgba(0,0,0,0.1);
   /* padding: 0.5em 0.5em; */
-  font-size: 1em;
-  font-weight: 500;
   font-family: inherit;
   cursor: pointer;
   transition: border-color 0.25s;
@@ -151,8 +152,6 @@ button:focus-visible {
 
 .result {
   padding: 0.5em 0.5em;
-  font-size: 1em;
-  font-weight: 500;
   font-family: inherit;
   background-color: #fff;
   min-height: 2em;
@@ -196,20 +195,23 @@ button:focus-visible {
   flex-direction: column;
   row-gap: 0.5ex;
   border-bottom: 1px solid black;
-  padding:2ex;
+  padding: 2ex 0
 }
 
 .slider{
   display: flex;
   flex-direction:row; 
   flex-wrap: wrap;
-  column-gap: 5px;
+  padding: 0 2ex;
+  border: 3px solid transparent;
+  /* column-gap: 5px; */
   /* justify-content: center; */
 }
 
 .track {
   border: 2px solid rgba(255,255,255,0.6);
-  flex:1;
+  width: 100%;
+  /* flex:1; */
   height: 20px;
   background-color: rgba(0,0,0,0.3);
   position: relative;
@@ -223,7 +225,6 @@ button:focus-visible {
   height: 100%;
   background-color: rgb(54, 131, 255);
   /* position:absolute; */
-  cursor: grab;
 }
 
 .thumb {
@@ -231,7 +232,6 @@ button:focus-visible {
   width: 5px;
   background-color: white;
   /* position:absolute; */
-  cursor: grab;
 }
 .middle {
   height: 100%;
@@ -252,15 +252,12 @@ button:focus-visible {
   /* background-color: rgba(0, 0, 0, 0.2); */
 }
 
-.bound{
-  width:2em;
-}
 
-.delete{
+
+/* .delete{
   aspect-ratio: 1 / 1;
   max-width:20px;
-  /* background-color:rgba(0, 0, 0, 0.2); */
-}
+} */
 
 .stop-scrolling {
   height: 100%;
@@ -289,9 +286,29 @@ canvas{
   left:0
 }
 
+.bound{
+  width:50%;
+}
+
+.c0{
+  text-align: left;
+}
+
+.c1{text-align: right;}
+
+
 .infobox{
-  z-index: 10;
   /* background-color: white;
   border: 2px solid black; */
-  padding: 0 1ex 0 1ex
+  padding: 0 1ex 0 1ex;
+  width:auto;
+  /* height:20px; */
+  
+  background-color:white;
+  box-shadow: 5px 5px 0px 1px rgba(0, 0, 140, .4);
+}
+
+.instrument{
+  z-index: 10;
+  position:fixed;
 }

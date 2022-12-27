@@ -1,20 +1,16 @@
 <script>
-    export let ev, name;
+    export let event, name, equipped;
     let vw;
     let vh;
 </script>
 
 <svelte:window bind:innerWidth={vw} bind:innerHeight={vh}/>
-<div class="infobox" style="top:{ev.y+20}px; left:{ev.x+20}px">
+<div class="infobox instrument" class:inactive={!equipped} style="top:{event.y+20}px; left:{event.x+20}px">
 {name}
 </div>
 
 <style>
-   .infobox{
-        width:20px;
-        height:20px;
-        position:fixed;
-        background-color:blue;
-        z-index:100;
-    }
+.inactive{
+    display:none
+}
 </style>
