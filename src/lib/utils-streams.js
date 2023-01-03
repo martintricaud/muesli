@@ -1,6 +1,16 @@
 import Kefir from "kefir";
 import * as R from 'ramda';
 
+export const keydown_ = key => Kefir.fromEvents(window,'keydown').filter(e=>e.key == key)
+export const mouseenter_ = el => Kefir.fromEvents(el, 'mouseenter');
+export const mouseleave_ = el => Kefir.fromEvents(el, 'mouseleave');
+export const mousedown_ = Kefir.fromEvents(window, 'mousedown');
+export const mouseup_ = Kefir.fromEvents(window, 'mouseup');
+export const shiftdown_ = Kefir.fromEvents(window,'keydown').filter(e=>e.shiftKey);
+export const shiftup_ = Kefir.fromEvents(window, 'keyup')
+export const mousemove_ = Kefir.fromEvents(window, 'mousemove');
+export const mousewheel_= Kefir.fromEvents(window,'wheel');
+
 export const hit= (mouse_, viewport) =>
   mouse_.flatMap((e) => {
     let a = {...e,
@@ -8,7 +18,6 @@ export const hit= (mouse_, viewport) =>
     }
     return Kefir.constant(a)
 });
-
 
 export const hold = (e_) =>
 e_.flatMap((e) =>
@@ -20,32 +29,33 @@ e_.map(e=>R.assoc('capture',value,e)).flatMap((e) =>
   Kefir.constant(e)
 );
 
-// (e) => R.assoc('targets', document.elementsFromPoint(e.x, e.y), e)
-
 export const asr = (a_, s_, r_) =>
 a_.flatMap((a) =>
   Kefir.constant(a)
-    .sampledBy(s_, (atk, sus) => {return {atk:atk, sus:sus}})
+    .sampledBy(s_, (atk, sus) => R.assoc('atk',atk,sus))
     .takeUntilBy(r_)
 );
 
-export const counterPlus_ = (el,end) => Kefir.fromEvents(el, 'mouseenter').flatMap(
-  (e)=>Kefir.interval(10,{movementX:0}).takeUntilBy(end))
+// return {atk:atk, sus:sus}}
 
-export const counterMinus_ = (el,end) => Kefir.fromEvents(el, 'mouseenter').flatMap(
+export const counterPlus_ = (el,end) => mouseenter_(el).flatMap(
+  (e)=>Kefir.interval(10,{movementX:10}).takeUntilBy(end))
+
+export const counterMinus_ = (el,end) => mouseenter_(el).flatMap(
     (e)=>Kefir.interval(10,{movementX:0}).takeUntilBy(end))
 
-export const machine = (el,end) => Kefir.fromEvents(el, 'mouseenter').flatMap(
+export const machine = (el,end) => mouseenter_(el).flatMap(
       (e)=>Kefir.interval(10,{movementX:0}).takeUntilBy(end))
   
 
-export const mouseleave_ = el => Kefir.fromEvents(el, 'mouseleave')
-export const mousedown_ = Kefir.fromEvents(window, 'mousedown');
-export const mouseup_ = Kefir.fromEvents(window, 'mouseup');
-export const shiftdown_ = Kefir.fromEvents(window,'keydown');
-export const shiftup_ = Kefir.fromEvents(window, 'keyup')
-export const mousemove_ = Kefir.fromEvents(window, 'mousemove');
-export const mousewheel_= Kefir.fromEvents(window,'wheel');
+export const whileOn = (el,ticker) => asr(
+  mouseenter_(el),
+  e=>Kefir.interval(ticker,Kefir.constant(e)),
+  mouseleave_(el)
+)
+
+
+
 
 
 

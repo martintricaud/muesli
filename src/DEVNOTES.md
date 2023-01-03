@@ -1,14 +1,14 @@
-- [ ] line breaks should be forbidden when renaming presets
+<!-- - [ ] line breaks should be forbidden when renaming presets -->
 - [x] ~~customize parent-children behaviours~~
 - [x] ~~instrument name appears as text box under cursor~~
 - [x] ~~presets should have unique names~~
   - [x] ~~function that computes smallest available value~~
-- [ ] presets
+- [ ] ~~26.12.2022 presets~~ 29.12.2022
   - [ ] activate preview on hover
   - [ ] update the renderfunctions to accept multiple thumbs
   - [ ] perform a deepMerge that previsualizes new thumbs and tracks, but doesn't display ranges
   - [x] ~~define a specific style for previewed thumbs and tracks~~
-  - [ ] - [ ] 26.12.2022 pass h_local and h_global as constructor params for the muesli store
+  - [x] ~~26.12.2022 pass h_local and h_global as constructor params for the muesli store~~ 29.12.2022
   - [ ] 26.12.2022 perform a deepMerge between the two stores ?
   - [ ] 26.12.2022 if keys exist in both, old is highlighted in red, new in green
 - [ ] orthozoom
@@ -34,13 +34,13 @@
   - [x] ~~update non existing key~~
   - [x] ~~update existing key~~
   - [x] ~~update zoom factor~~
-- [ ] 23.12.2022 create store for instruments / presets
+- [ ] 23.12.2022 create store for instruments
   - [ ] 23.12.2022 setFocus
   - [ ] 23.12.2022 getFocus
   - [ ] 23.12.2022 focus is a derivedStore obtained by filtering the store
 - [ ] 25.12.2022 Feedforward
   - [ ] check compare type of equipped instrument's effect and type of element at target path
-- [ ] 26.12.2022 presets
+
 
 
 

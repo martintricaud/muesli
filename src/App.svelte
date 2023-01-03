@@ -1,57 +1,124 @@
-<script>
-  //import { scale } from './lib/utils2.ts';
-  import { onMount, afterUpdate } from 'svelte';
-  import { get } from 'svelte/store';
-  import {random_adjunction,muesliStore2, liftSolve, solve} from './lib/stores';
-  import { shiftdown_, shiftup_, mouseup_, mousedown_, mousemove_, mouseleave_, mousewheel_, asr, counterMinus_ } from './lib/utils-streams.js';
-  import { synth2, preset2, preset2bis } from './lib/data.js';
+<script lang ts>
+  import { writable } from 'svelte/store';
+  import { onMount } from 'svelte';
+  import { random_adjunction, MuesliStore, liftSolve, solve, PresetStore } from './lib/stores';
+  import {
+    shiftdown_,
+    shiftup_,
+    mouseup_,
+    mousedown_,
+    mousemove_,
+    mousewheel_,
+    asr,
+  } from './lib/utils-streams.js';
+  import { synth2, preset2, preset2bis } from './lib/data';
   import { wasm_functions as W } from './main.js';
   import * as U from './lib/utils';
   import * as S from './lib/utils-streams.js';
   import * as R from 'ramda';
   import * as K from 'kefir';
   import HydraViewer from './lib/HydraViewer.svelte';
-  import GrabFeedback from './lib/GrabFeedback.svelte';
+  import Grab from './lib/Grab.svelte';
   import InfoBox from './lib/InfoBox.svelte';
   import SetFeedback from './lib/SetFeedback.svelte';
   import { prng_alea } from 'esm-seedrandom';
 
   // BINDINGS FOR DOM ELEMENTS AND THEIR SIZES
 
-  let currentPreset = preset2;
-  let presets = [];
-
-  let iw, ih, macro_w, track_w, range_w, thumb_w = 5;
-  let zf = 0.2; //Zoom Factor
+  let iw,
+    ih,
+    macro_w,
+    track_w,
+    range_w,
+    thumb_w = 5;
 
   let instruments = {
-    hold: { equipped: false, component: InfoBox, event: { x: 0 }, feedforward: "willHold" },
-    pin: { equipped: false, component: InfoBox, event: { x: 0 }, feedforward: "willPin"},
-    eraser: { equipped: false, component: InfoBox, event: { x: 0 }, feedforward: "willErase" },
-    grab: { equipped: false, component: GrabFeedback, event: { x: null }, feedforward: "willGrab" },
-    set: { equipped: false, component: SetFeedback, event: { x: null }, feedforward: "willSet" },
-    none: { equipped: true, component: InfoBox, event: { x: 0 }, feedforward: "willNone" },
+    hold: { equipped: false, component: InfoBox, event: {}, feedforward: 'willHold' },
+    pin: { equipped: false, component: InfoBox, event: {}, feedforward: 'willPin' },
+    eraser: {
+      equipped: false,
+      component: InfoBox,
+      event: {},
+      feedforward: 'willErase',
+      effect: R.omit,
+    },
+    grab: { equipped: false, component: Grab, event: {}, feedforward: 'willGrab', effect: drag_effect2, },
+    set: { equipped: false, component: SetFeedback, event: {}, feedforward: 'willSet' },
+    none: { equipped: true, component: InfoBox, event: {}, feedforward: 'willNone' },
   };
 
+  //reactive value that returns the name of the currently equipped instrument
   $: equipped = R.keys(R.pickBy((x, key) => x.equipped, instruments))[0];
-  $: ff = instruments[equipped].feedforward
+  $: feedforward = instruments[equipped].feedforward;
 
-  let muesli = muesliStore2(preset2bis);
-  $: [H_global,H_local,P,Keys, B] = muesli
+  const presets = PresetStore([
+    {
+      name: 'preset0',
+      ranges: preset2bis,
+      h_global: W.bigint_prod(0.1, U.fMAX_H(32, 19), 100),
+      h_local: W.bigint_prod(0.5, U.fMAX_H(32, 19), 100),
+      z: 1,
+    },
+  ]);
+  //presetFocus defines the preset of parameters currently loaded
+  //zf is the zoom factor
+  const [presetFocus, zf] = [writable(0), writable(1)];
+  const muesli = [...MuesliStore($presets[$presetFocus])];
+  $: [H_global, H_local, P, Keys, B] = muesli;
+  $: data_c0c1z = R.toPairs(R.map(R.pick(['c0', 'c1', 'z']), $P));
+  $: data_a = R.pluck('a', $P);
 
   // STREAMS AND THEIR OBSERVERS
-  let drag_, cursorInfo_, click_, wheel_, move_, pool_, pool2_, counterPlus_, incrementers, decrementers;
-  drag_ = cursorInfo_ = click_ = counterPlus_ = wheel_ = move_ = pool_ = pool2_ = incrementers= decrementers = undefined;
+  let drag_,
+    cursorInfo_,
+    click_,
+    wheel_,
+    move_,
+    pool_,
+    pool2_,
+    counterPlus_,
+    incrementers,
+    decrementers,
+    effect;
+  drag_ =
+    cursorInfo_ =
+    click_ =
+    counterPlus_ =
+    wheel_ =
+    move_ =
+    pool_ =
+    pool2_ =
+    incrementers =
+    decrementers =
+    effect =
+      undefined;
+
+  function log_effect(val) {
+    console.log(val.detail(1))
+  }
+
+  function drag_effect2(event) {
+    let e = event.detail
+    if(e.atk){
+      console.log(e.movementX)
+      const store = e.atk.target.dataset?.store;
+      const [key, field] = U.stringToPath(e.atk.target.dataset.path);
+      let f;
+      if (store == 0 || store == 1) {
+      f = U.add(U.scale(0, track_w, '0', U.fMAX_H($B, 19), e.movementX));
+    }
+    if (store == 2) {
+      let f0 = U.add(U.scale(0, track_w, $P[key].c0, $P[key].c1, e.movementX));
+      f = liftSolve(solve, U.deepObjOf([key, field], f0));
+    }
+    muesli?.[store]?.update(f);
+    }
+
+   
+  }
 
   function save_effect(val) {
-    console.log('saved ' + U.smallestPresetAvailable(R.pluck(['name'], presets)));
-    presets = R.append({name: U.smallestPresetAvailable(R.pluck(['name'], presets)),
-        data: {},
-        H_global: '',
-        H_local: '',
-      },
-      presets
-    );
+    presets.add(val);
   }
 
   function feedback(e) {
@@ -74,30 +141,50 @@
 
   function equip_effect(name) {
     instruments = R.mapObjIndexed(
-      (x, k) => R.modify('equipped', k == name ? R.not : R.F, x), instruments );
+      (x, k) => R.modify('equipped', k == name ? R.not : R.F, x),
+      instruments
+    );
   }
 
-  function click_effect(atk){
-    if(equipped == "eraser"){  
-      muesli?.[atk.target.dataset?.store]?.update(R.omit([atk.target.dataset?.key]))
-      //todo: replace with R.dissocPath(['a', 'b', 'c'], {a: {b: {c: 42}}})
+  function click_effect(e) {
+    let target = e.target;
+    if (equipped == 'eraser') {
+      target.classList.contains('erasable')
+        ? muesli?.[target.dataset?.store]?.update(R.omit(U.stringToPath(target.dataset?.path)))
+        : console.log('nothing to erase');
+    } else if (equipped == 'lock') {
     }
-    else if(equipped == "lock"){}
-    
+  }
+  // function click_effect(atk:Event){
+  //   let target = atk.target as HTMLElement
+  //   if(equipped == "eraser"){
+  //     target.classList.contains('erasable') ?
+  //     muesli?.[target.dataset?.store]?.update(R.omit(U.stringToPath(target.dataset?.path))) :
+  //     console.log("nothing to erase")
+  //   }
+  //   else if(equipped == "lock"){}
+  // }
+
+  function load_effect(i) {
+    presetFocus.set(i);
+    muesli[0].set($presets[i].h_global);
+    muesli[1].set($presets[i].h_local);
+    muesli[2].set(R.fromPairs($presets[i].ranges));
   }
 
-  function drag_effect({ atk, sus }) {
-    const [store, key, field] = [atk.target.dataset?.store, atk.target.dataset?.key, atk.target.dataset?.field]
-    let f
-    if(store == 0 || store ==1){
-      f = U.add(U.scale([0, track_w], ['0', U.fMAX_H(32, 20)])(sus.movementX))
-    }
-    if(store == 2){
-      let f0 = U.add(U.scale([0, track_w], [$P[key].c0,$P[key].c1])(sus.movementX))
-      f = liftSolve(solve, $P, U.deepObjOf([key,field],f0))
-    }
-    muesli?.[store]?.update(f)
-  }
+  // function drag_effect(e) {
+  //   const store = e.atk.target.dataset?.store;
+  //   const [key, field] = U.stringToPath(e.atk.target.dataset.path);
+  //   let f;
+  //   if (store == 0 || store == 1) {
+  //     f = U.add(U.scale(0, track_w, '0', U.fMAX_H($B, 19), e.movementX));
+  //   }
+  //   if (store == 2) {
+  //     let f0 = U.add(U.scale(0, track_w, $P[key].c0, $P[key].c1, e.movementX));
+  //     f = liftSolve(solve, U.deepObjOf([key, field], f0));
+  //   }
+  //   muesli?.[store]?.update(f);
+  // }
 
   function shiftdown_effect(val) {
     document.body.style.setProperty('overflow', 'hidden');
@@ -108,57 +195,70 @@
     document.getElementById('all-sliders').style.setProperty('overflow', 'scroll');
   }
 
-  function wheel_effect({atk,sus}) {
-    let curr = R.clamp(
-      0.0000001, 1, zf + U.scale([0, ih * 100], [0.0000001, 1])(sus.wheelDeltaY));
-    let f = x=>curr/zf*x
-    muesli[2].update(liftSolve(solve, $P, R.map(R.always(R.objOf('z',f)),$P)))
-    zf = curr
+  function wheel_effect(e) {
+    let curr = R.clamp(0.0000001, 1, $zf + U.scale(0, ih * 100, 0.0000001, 1, e.wheelDeltaY));
+    let f = (x) => (curr / $zf) * x;
+    muesli[2].update(liftSolve(solve, R.map(R.always(R.objOf('z', f)), $P)));
+    zf.set(curr);
   }
 
   let hit_;
 
   onMount(() => {
+    S.keydown_(' ').log()
     pool_ = K.pool().plug(S.mouseup_);
-    R.forEach(el => pool_.plug(S.mouseleave_(el)), document.getElementsByClassName('plus'))
-    incrementers = R.map(el=> S.counterPlus_(el, pool_), document.getElementsByClassName('plus'))
-    R.forEach(el => pool_.plug(S.mouseleave_(el)), document.getElementsByClassName('minus'))
-    decrementers = R.map(el=> S.counterPlus_(el, pool_), document.getElementsByClassName('minus'))
+    R.forEach((el) => pool_.plug(S.mouseleave_(el)), document.getElementsByClassName('plus'));
+    incrementers = R.map(
+      (el) => S.counterPlus_(el, pool_),
+      document.getElementsByClassName('plus')
+    );
+    R.forEach((el) => pool_.plug(S.mouseleave_(el)), document.getElementsByClassName('minus'));
+    decrementers = R.map(
+      (el) => S.counterPlus_(el, pool_),
+      document.getElementsByClassName('minus')
+    );
 
     move_ = mousemove_.thru(S.obs(feedback));
 
     shiftdown_.thru(S.obs(shiftdown_effect));
     shiftup_.thru(S.obs(shiftup_effect));
-    wheel_ = 
-      S.asr(S.capture(zf,shiftdown_), mousewheel_, shiftup_)
-        .thru(S.obs(wheel_effect));
-    drag_ = asr(
-      mousedown_,
-      K.merge([move_, K.merge(incrementers)]),
-      mouseup_
-    )
-      .thru(S.obs(drag_effect))
-      .thru(S.obs(feedback));
+    wheel_ = S.asr(S.capture($zf, shiftdown_), mousewheel_, shiftup_).thru(S.obs(wheel_effect));
+    drag_ = asr(mousedown_, move_, mouseup_).thru(S.obs(feedback))//.thru(S.obs(drag_effect))
+    // drag_ = asr(
+    //   mousedown_,
+    //   K.merge([move_, K.merge(incrementers)]),
+    //   mouseup_
+    // )
+    // .thru(S.obs(feedback))
+    // .thru(S.obs(drag_effect))
+
+    
+
     hit_ = mousedown_.map((e) => R.assoc('targets', document.elementsFromPoint(e.x, e.y), e));
   });
 </script>
 
-<svelte:window bind:innerHeight={ih} bind:innerWidth={iw}/>
+<svelte:window bind:innerHeight={ih} bind:innerWidth={iw} />
 <main>
-  {#each Object.entries(instruments) as [name, { equipped, component, event }]}
-      <svelte:component this={component} {equipped} {event} {name} />
+  {#each Object.entries(instruments) as [name, { equipped, component, event, effect }]}
+    <svelte:component this={component} {equipped} {event} {name} on:effect={effect} />
   {/each}
   <div class="menu">
     <div class="instrument-palette">
-      {#each Object.entries(instruments) as [name, {equipped}]}
+      {#each Object.entries(instruments) as [name, { equipped }]}
         <button class:equipped on:click={() => equip_effect(name)}>{name}</button>
       {/each}
     </div>
     <div class="presets">
-      <button on:click={save_effect}>save</button>
-      {#if presets.length > 0}
-        {#each presets as { name, data, h0, h1 }}
-          <span class="preset {ff}">{name}</span>
+      <button
+        data-path=""
+        on:click={() =>
+          save_effect({ ranges: data_c0c1z, h_global: $H_global, h_local: $H_local, z: $zf })}
+        >save</button
+      >
+      {#if $presets.length > 0}
+        {#each $presets as { name }, i}
+          <span class="preset erasable {feedforward}" on:click={() => load_effect(i)}>{name}</span>
         {/each}
       {/if}
     </div>
@@ -166,97 +266,65 @@
   <div class="app">
     <div class="ui">
       <div class="slider-container" id="macro-sliders">
-        <div class="slider">
+        <div class="slider macro">
           <div class="param-name">Macro #2 (Global exploration)</div>
           <div class="track" bind:clientWidth={macro_w}>
             <div
-              data-store=0
-              data-key='h'
-              data-field="b"
-              class="thumb"
-              style="left:{W.rescale_index($H_global, 32, 20) * macro_w}px; width:{thumb_w}px"
+              class="thumb draggable"
+              data-store="0"
+              data-path="h b"
+              style="left:{W.rescale_index($H_global, $B, 19) * macro_w}px; width:{thumb_w}px"
             />
           </div>
         </div>
-        <div class="slider">
+        <div class="slider macro">
           <div class="param-name">Macro #2 (Local exploration)</div>
           <div class="track">
             <div
-              data-store=1 data-key='h' data-field="a" class="thumb"
-              style="left:{W.rescale_index($H_local, 32, 20) * macro_w}px; width:{thumb_w}px"
+              data-store="1"
+              data-path="h a"
+              class="thumb draggable"
+              style="left:{W.rescale_index($H_local, $B, 19) * macro_w}px; width:{thumb_w}px"
             />
           </div>
         </div>
       </div>
       <div class="slider-container" id="all-sliders">
         <!-- The list of individual sliders is generated by iterating over the store containing sliders data-->
-        {#each Object.entries($P) as [key, p]}
-          <div class="slider {ff}" on:click={click_effect} data-key={key} data-store=2>
-            <div class="param-name {ff}" data-key={key} data-store=2>{key}</div>
+        {#each Object.entries($P) as [key, { a, b, c0, c1, z }]}
+          <div
+            class="slider erasable {feedforward}"
+            on:click={click_effect}
+            data-path={key}
+            data-store="2"
+          >
+            <div class="param-name {feedforward}" data-store="2">{key}</div>
+            <div class="bound c0">{c0}</div>
             <div class="track" bind:clientWidth={track_w}>
-              <div data-store=2 data-key={key} data-field="b" class="range"
-                style="width:{(track_w * p.z) / (p.c1 - p.c0)}px; 
-                  left:{(track_w * (p.b-p.z / 2 - p.c0))/(p.c1-p.c0)}px;"
+              <div
+                data-store="2"
+                data-path="{key} b"
+                class="range draggable"
+                style="width:{(track_w * z) / (c1 - c0)}px; 
+                  left:{(track_w * (b - z / 2 - c0)) / (c1 - c0)}px;"
                 bind:clientWidth={range_w}
               />
-              <div class="middle" 
-                style="width:{2}px; left:{(track_w * (p.b - p.c0)) /(p.c1 - p.c0)}px;"
-              />
-              <div data-store=2 data-key={key} data-field="a"  class="thumb"
-                style="left:{(track_w * (p.a - p.c0))/(p.c1 - p.c0)}px; width:{thumb_w}px"
+              <div class="middle" style="width:{2}px; left:{U.scale(c0,c1,0,track_w,b)}px;" />
+              <div
+                data-store="2"
+                data-path="{key} a"
+                class="thumb draggable"
+                style="left:{U.scale(c0,c1,0,track_w,a)}px; width:{thumb_w}px"
                 bind:clientWidth={thumb_w}
               />
             </div>
-            <div class="bound c0">{p.c0}</div>
-            <div class="bound c1">{p.c1}</div>
+            <div class="bound c1">{c1}</div>
           </div>
         {/each}
       </div>
       <div class="viewport">
-        <!-- <HydraViewer synth={synth2} data={$t_data[0]} w={1200} h={1000}/> -->
+        <HydraViewer synth={synth2} data={data_a} w={1200} h={1000}/>
       </div>
     </div>
   </div>
 </main>
-
-<style>
-  div > p {
-    overflow-y: hidden;
-    max-width: 100%;
-  }
-  .container {
-    background-color: rgba(0, 0, 0, 0);
-  }
-  .equipped {
-    filter: contrast(50%) saturate(50%) opacity(70%);
-  }
-  .locked {
-    filter: contrast(50%) saturate(50%) opacity(70%);
-  }
-  .preview {
-    filter: brightness(120%) hue-rotate(60deg);
-  }
-
-  .inactive {
-    display: none;
-  }
-  
-  .willErase{}
-
-  .willErase:hover{
-    background-color: rgba(255,0,0,0.2);
-    filter:brightness(150%) saturate(70%);
-    border: 3px solid red;
-    box-sizing: content-box;
-  }
-
-  .willSet{
-    
-  }
-  .willSet:hover{
-    background-color: rgba(0,0,255,0.2);
-    filter:brightness(150%) saturate(70%);
-    border: 3px solid blue;
-    box-sizing: content-box;
-  }
-</style>

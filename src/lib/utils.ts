@@ -4,36 +4,29 @@ import * as T from './types'
 
 export const [fMAX_H, fMAX_A] = [(b,dim) =>W.bigint_dif(W.max_hilbert(b, dim),"1"), b=>Math.pow(2, b) - 1];
 
-export const clamp = ([m, M]) =>
+export const clamp = (m, M,x) =>
   typeof m === "string" || typeof M === "string" ?
-    x => W.bigint_clamp(...[m, M], x) :
-    x => R.clamp(m, M, x)
+    W.bigint_clamp(m, M, x) :
+    R.clamp(m, M, x)
 
-export const scale_around_C_by_Z = (c, z) => L => L.map(x => x + (x - c) * z)
-export const scale = ([a, A], [b, B]) =>
+export const scale = (a, A, b, B,x) =>
   typeof A === "string" || typeof B === "string" ?
-    x => scale2bigint([a, A])([b, B])(x) :
-    x => (x - a) * (B - b) / (A - a);
+    scale2bigint(a,A,b,B,x) :
+    (x - a) * (B - b) / (A - a);
 
-export const reorder = L => R.sort((a, b) => a - b, L);
-export const clip = B => A => { return [Math.max(B[0], A[0]), Math.min(A[1], B[1])] }
-export const offset = ([r, R], p) => [r + p, R + p]
+export const reorder = R.sort((a:any, b) => a - b)
 export const zoom = p => ([m, M]) => [m + Math.min(0.5, p / 2) * (M - m), M - Math.min(0.5, p / 2) * (M - m)]
-export const thick = p => ([r, R]) => [-p * (R - r) / 2, p * (R - r) / 2]
-export const lerp = ([a, A], [b, B]) => (x) => (x - a) * (B - b) / (A - a) + b
-export const lerpBis: (A: [number, number], B: [number, number], x: number) => number = ([a, A], [b, B], x) => (x - a) * (B - b) / (A - a) + b
-export const lerp_AB = A => B => x => scale(A, B)(x) + B[0]; 
-export const lerp_BA = B => A => x => scale(A, B)(x) + B[0];
-export const scale2bigint = ([a, A]) => ([b, B]) => x => W.bigint_prod((x - a) / (A - a), W.bigint_dif(B, b), Math.pow(10, 15));
-export const lerp2bigint = A => B => x => W.bigint_sum(B[0], scale2bigint(A)(B)(x))
+export const lerp = (a, A, b, B,x) => (x - a) * (B - b) / (A - a) + b
+export const scale2bigint = (a, A, b, B,x) => W.bigint_prod((x - a) / (A - a), W.bigint_dif(B, b), Math.pow(10, 15));
+//export const scaleFromBigint =  ([a, A],[b, B],x) => 
+export const lerp2bigint = (A: [number, number], B: [number, number], x) => W.bigint_sum(B[0], scale2bigint(...A,...B,x))
 export const willStayUnder = (target, bound, tolerance = 0) => (bound - target) >= tolerance
 export const willStayBetween = (target, [m, M]) => willStayUnder(m, target[0]) && willStayUnder(R.last(target), M)
 //! bad code coverage
 export const plus = (a,b)=> typeof a === 'number'? a+b : W.bigint_sum(a, b)
 export const add = b => a => plus(a, b);
-//let scaleBack = x => U.lerp_AB(mM(x))([0, MAX_A])(v(x))
 
-export function smallestPresetAvailable(arr:string[]) {
+export function assignDefaultName(arr:string[]) {
   let foo = arr
     .filter(x => x.includes("preset"))
     .map(str => Number(R.last(str)))
@@ -45,8 +38,6 @@ export function smallestPresetAvailable(arr:string[]) {
   }
   return "preset" + a
 }
-
-
 
 // let comply = (slave) => (master) => {
 //     let a = hilbert_adjunction(ax,32)[0](slave);
@@ -64,19 +55,18 @@ export const deepMap = (fn, xs) => R.mapObjIndexed(
     xs
   );
 
-export const deepObjOf = (path,val) => R.assocPath(path, val, {})
-
-export const mergePartialWith = R.curry((f,A,B) => R.mergeWith(f,A,R.pick(R.keys(A),B)))
+export const deepObjOf = (path:Array<string | number>,val) => R.assocPath(path, val, {})
+export const mergePartialWith = R.curry((f:any,A:object,B:object) => R.mergeWith(f,A,R.pick(R.keys(A),B)))
 
 function lerpView(valField:string, range:(obj: Record<string, number>)=>[number,number],targetRange:[number,number]){
   return function (obj: Record<string, number>) {
-    return lerpBis(range(obj), targetRange, obj[valField])
+    return lerp(...range(obj), ...targetRange, obj[valField])
   }
 }
 
-function lerpSet(valField, range:(obj: Record<string, number>)=>[number,number], sourceRange){
+function lerpSet(valField, range:(obj: Record<string, number>)=>[number,number], sourceRange:[number,number]){
   return function (val:number, obj: Record<string, number>) {
-    return R.assoc(valField, lerpBis(sourceRange, range(obj), val), obj)
+    return R.assoc(valField, lerp(...sourceRange, ...range(obj), val), obj)
   }
 }
 
@@ -84,4 +74,12 @@ export function lerpLens(valField, range:(obj: Record<string, number>)=>[number,
   return R.lens(lerpView(valField,range,otherRange), lerpSet(valField,range,otherRange));
 }
 
+export function stringToPath(s:string | undefined){
+  let res = R.split(' ',s)
+  let res2:Array<string|number> = R.map((x:any)=>isNaN(x)?x:Number(x), res)
+  return res2
+}
 
+// export function toggleFocus(name) {return R.mapObjIndexed(
+//     (x:any, k) => R.modify('equipped', k == name ? R.not : R.F, x));
+// }

@@ -1,7 +1,9 @@
 <script>
+    import {createEventDispatcher} from 'svelte';
     export let event, name, equipped;
-    let vw;
-    let vh;
+    let vw, vh;
+    const dispatch = createEventDispatcher();
+    $: ()=>dispatch('effect', {})
 </script>
 
 <svelte:window bind:innerWidth={vw} bind:innerHeight={vh}/>

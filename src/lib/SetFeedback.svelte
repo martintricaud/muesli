@@ -1,13 +1,15 @@
 <script>
-    import { afterUpdate } from 'svelte';
+    import { afterUpdate, createEventDispatcher } from 'svelte';
     export let event, name, equipped;
-    let vw;
-    let vh;
+    let vw, vh;
+    const dispatch = createEventDispatcher();
+    $: ()=>dispatch('effect', {})
     afterUpdate(() => {
         equipped
             ? document.getElementById('setter').focus()
             : document.getElementById('setter').blur();
     });
+
 </script>
 
 <svelte:window bind:innerWidth={vw} bind:innerHeight={vh} />
