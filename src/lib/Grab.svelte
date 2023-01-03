@@ -15,6 +15,9 @@
     let incrementers = undefined;
     let decrementers = undefined;
     const dispatch = createEventDispatcher();
+    // $: console.log(event?.atk)
+    $: orthoZoomPos = event?.atk?.target.getBoundingClientRect().left
+    $: console.log(orthoZoomPos)
     $: attack = event.atk??event
     $: trackX = R.clamp(0,500,event.x)
     $: thumbY = R.clamp(attack.y-400, attack.y + 400, event.y) - 10
@@ -47,13 +50,14 @@
 <div
     class="orthozoom"
     class:inactive={!equipped} class:off={!R.has('atk', event)}
-    style="top:{Math.min(attack.y, thumbY)}px; left:{trackX - 10}px; height:{Math.abs(thumbY-attack.y)}px" bind:clientWidth={trackW}
+    style="top:{Math.min(attack.y, thumbY)}px; left:{orthoZoomPos - 10}px; height:{Math.abs(thumbY-attack.y)}px" bind:clientWidth={trackW}
 />
 
 <div class="plus machine" class:inactive={!equipped} style="top:{thumbY}px; left:{trackX + 10}px;">+</div>
 <div class="minus machine" class:inactive={!equipped} style="top:{thumbY}px; left:{trackX - 30}px;">
     -
 </div>
+
 
 <slot />
 

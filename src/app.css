@@ -336,3 +336,55 @@ canvas{
   border: 3px solid blue;
   box-sizing: content-box;
 }
+
+.instrument-2{
+  display:flex; 
+  flex-direction:row; 
+  position:fixed; 
+  height: 100vh;
+  /* padding-top:calc((100vh - 50px)/2);
+  padding-bottom:calc((100vh - 50px)/2) */
+  column-gap: 10px;
+}
+
+.instrument-2.hidden{
+  display:none; 
+  flex-direction:row; 
+  position:fixed; 
+  height: 100vh;
+  /* padding-top:calc((100vh - 50px)/2);
+  padding-bottom:calc((100vh - 50px)/2) */
+  column-gap: 10px;
+}
+
+.instrument-2>div{
+  display: flex;
+  background-color: rgba(61, 61, 61, 0.7);
+  /* backdrop-filter: blur(3px) grayscale(60%); */
+  color: white;
+  padding: 0.5em 0.5em;
+  border-top: calc(50vh - 25px) solid transparent;
+  border-bottom: calc(50vh - 25px) solid transparent;
+  height:50px;
+  box-sizing: content-box;
+  background-clip: padding-box;
+
+  align-items: center;
+  
+}
+
+.instrument-2>button{
+  background-color: aqua;
+  border-top: calc(50vh - 25px) solid transparent;
+  border-bottom: calc(50vh - 25px) solid transparent;
+  height:50px;
+  box-sizing: content-box;
+  background-clip: padding-box;
+  
+}
+
+
+.instrument-2>div:hover{
+  filter: contrast(200%) brightness(150%);
+  font-weight: bold;
+}
