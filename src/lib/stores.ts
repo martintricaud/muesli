@@ -66,6 +66,7 @@ export function sync(left, right) {
 	];
 }
 
+// Hard coded simplex solver that maintains constraints between fields a, b, c0, c1, z of an object
 export function solve(update: P<E<num>>, param: P<num>) {
 	let e = 0.01 //tolerance
 	const fields: str[] = ["a", "z", "b", "c0", "c1"]
@@ -83,24 +84,7 @@ export function solve(update: P<E<num>>, param: P<num>) {
 	return res
 }
 
-
-// export function solveBigInt(update: P<E<string>>, param: P<string>){
-// 	let e = '1' //tolerance
-// 	const fields: str[] = ["a", "z", "b", "c0", "c1"]
-// 	const [fa, fz, fb, fc0, fc1]: E<str>[] = R.map((x: E<str>) => x ??= R.identity, R.props(fields, update)) //fields that are not updated are updated with the identity
-// 	const [va, vz, vb, vc0, vc1]: str[] = R.props(fields, param)
-// 	let gz, gb, ga, gc0, gc1
-// 	[gc0, gc1] = U.willStayUnder(e, fc1(vc1) - fc0(vc0)) ? [fc0, fc1] : [x => fc1(x - e / 2) - e / 2, x => fc0(x + e / 2) + e / 2]
-// 	let boundsOfZ:[num, num] = [0,gc1(vc1) - gc0(vc0)]
-// 	gz = U.willStayBetween([fz(vz)], boundsOfZ) ? fz : R.pipe(fz,R.clamp(...boundsOfZ))
-// 	let boundsOfB: [num, num] = [gc0(vc0) + gz(vz) / 2, gc1(vc1) - gz(vz) / 2]
-// 	gb = U.willStayBetween([fb(vb)], boundsOfB) ? fb : R.pipe(fb,R.clamp(...boundsOfB))
-// 	let boundsOfA: [num, num] = [gb(vb) - gz(vz) / 2, gb(vb) + gz(vz) / 2]
-// 	ga = U.willStayBetween([fa(va)], boundsOfA) ? fa : R.pipe(fa,R.clamp(...boundsOfA))
-// 	let res: P<E<num>> = { a: ga, z: gz, b: gb, c0: gc0, c1: gc1 }
-// 	return res
-// }
-
+// lifts a solver to array of objects
 export const liftSolve = (solver: T_Solver, F: P<P<E<num>>>) => (X: P<P<num>>) => R.evolve(U.mergePartialWith(solver, F, X),X)
 
 
@@ -131,7 +115,6 @@ export function liftedConstraintStore(ranges: Array<[str, P<any>]>, _epsilon: nu
 }
 
 export function MuesliStore(data) {
-
 	// B = bits per dimensions, P = parameters, K = Keys, HF = Hilbert Forward, HR = Hilbert Reverse
 	const [Params, Keys, Bits] = [...liftedConstraintStore(data.ranges),writable(32)]
 	let $Params, $Keys, $Bits
@@ -188,84 +171,6 @@ export function MuesliStore(data) {
 		{ subscribe: Bits.subscribe, set: Bits.set, update: Bits.update },
 	]
 }
-
-// export function MuesliStore2(data) {
-	
-// 	data.h_local2 ??= {
-// 		c0: 0, 
-// 		v: W.bigint_prod(0.5, U.fMAX_H(32, 19), 100),
-// 		c1: U.fMAX_H(32, 19)
-// 	}
-	
-// 	data.h_global2 ??= {
-// 		c0: 0, 
-// 		v: W.bigint_prod(0.5, U.fMAX_H(32, 19), 100),
-// 		c1: U.fMAX_H(32, 19)
-// 	}
-// 	// B = bits per dimensions, P = parameters, K = Keys, HF = Hilbert Forward, HR = Hilbert Reverse
-
-// 	const [Params, Keys] = liftedConstraintStore(data.ranges)
-// 	//const [Macros, Keys2] = liftedConstraintStore([["h_local",{c0:'0', c1:100}],["h_global",{c0:0, c1:100}]])
-// 	const Bits = writable(32)
-	
-// 	const [H_local2, H_global2] = [writable(data.h_local2), writable(data.h_global2)]
-
-
-// 	let $Params, $Keys, $Bits
-
-// 	Bits.subscribe(b => { $Bits = b })
-// 	Params.subscribe(p => { $Params = p; })
-// 	Keys.subscribe(k => { $Keys = k; })
-
-
-// 	let lensA = U.lerpLens('a', obj => [obj.b - obj.z / 2, obj.b + obj.z / 2], [0, U.fMAX_A($Bits)])
-// 	let lensB = U.lerpLens('b', obj => [obj.c0, obj.c1], [0, U.fMAX_A($Bits)])
-
-
-// 	function setH_local2(h: string) {
-// 		updateH_local2(R.always(U.clamp(['0', U.fMAX_H(32, 19)],h)))
-// 	}
-
-// 	function setH_global2(h: string) {
-// 		updateH_global2(R.always(U.clamp(['0', U.fMAX_H(32, 19)],h)))
-// 	}
-
-// 	function updateH_local2(f_h) {
-// 		let f = R.modify('v',x=>U.clamp(['0', U.fMAX_H(32, 19)],f_h(x)))
-// 		H_local2.update(f)
-// 		let hx = R.zipObj($Keys, W.forward(get(H_local2)['v'],32,19))
-// 		Params.set(R.mergeWith(R.set(lensA), hx, $Params))
-// 	}
-
-// 	function updateH_global2(f_h) {
-// 		let f = R.modify('v',x=>U.clamp(['0', U.fMAX_H(32, 19)],f_h(x)))
-// 		H_global2.update(f)
-// 		let hx = R.zipObj($Keys, W.forward(get(H_global2)['v'],32,19))
-// 		Params.set(R.mergeWith(R.set(lensB), hx, $Params))
-// 	}
-
-// 	function setParams(X) {
-// 		Params.set(X);
-// 	}
-
-
-// 	function updateParams2(X) {
-// 		Params.update(X)
-// 		let [H_global_setters,H_local_setters] = [
-// 			R.mapObjIndexed(R.view(lensB), $Params),
-// 			R.mapObjIndexed(R.view(lensA), $Params)
-// 		]
-// 		H_local2.set(W.inverse(u32a.from(R.props($Keys,H_local_setters)), 32))
-// 		H_global2.set(W.inverse(u32a.from(R.props($Keys,H_global_setters)), 32))
-// 	}
-// 	return [
-// 		{ subscribe: H_global2.subscribe, set: setH_global2, update: updateH_global2 },
-// 		{ subscribe: H_local2.subscribe, set: setH_local2, update: updateH_local2 },
-// 		{ subscribe: Params.subscribe, set: setParams, update: updateParams2 },
-// 		{ subscribe: Keys.subscribe, set: Keys.set, update: Keys.update },
-// 		{ subscribe: Bits.subscribe, set: Bits.set, update: Bits.update },
-// 	]
-// }
 
 export function PresetStore(init: T.Preset[]|[]) {
 	const Presets: Writable<T.Preset[]|[]> = writable(init);

@@ -77,6 +77,22 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/kefir@npm:^3.8.7":
+  version: 3.8.7
+  resolution: "@types/kefir@npm:3.8.7"
+  dependencies:
+    "@types/node": "*"
+  checksum: f3e23cc03c3ddfd40c6b0fd90b2a99f99666279555d821aeafbefe4bb2be1bb2ab48fead9e5fc27e599ebd0bd8138e300242a31adb97debaa53e4d95a6aa1706
+  languageName: node
+  linkType: hard
+
+"@types/node@npm:*":
+  version: 18.11.18
+  resolution: "@types/node@npm:18.11.18"
+  checksum: 03f17f9480f8d775c8a72da5ea7e9383db5f6d85aa5fefde90dd953a1449bd5e4ffde376f139da4f3744b4c83942166d2a7603969a6f8ea826edfb16e6e3b49d
+  languageName: node
+  linkType: hard
+
 "@types/ramda@npm:^0.28.20":
   version: 0.28.20
   resolution: "@types/ramda@npm:0.28.20"
@@ -1075,6 +1091,7 @@ __metadata:
   resolution: "muesli@workspace:."
   dependencies:
     "@sveltejs/vite-plugin-svelte": ^1.0.2
+    "@types/kefir": ^3.8.7
     "@types/ramda": ^0.28.20
     esm-seedrandom: ^3.0.5
     feather-icons: ^4.29.0

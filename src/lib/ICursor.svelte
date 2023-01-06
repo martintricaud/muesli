@@ -3,7 +3,7 @@
     export let ev, name, equipped;
     let vw, vh;
     const dispatch = createEventDispatcher();
-    $: ()=>dispatch('effect', {})
+    $: ()=>dispatch('effect', {...ev})
 </script>
 
 <svelte:window bind:innerWidth={vw} bind:innerHeight={vh}/>

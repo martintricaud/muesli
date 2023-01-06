@@ -2,29 +2,25 @@
     import { onMount, afterUpdate, beforeUpdate } from 'svelte';
     import HydraRenderer from 'hydra-synth';
     let hydracanvas
+    export let synth;
+    export let data;
     export let w;
     export let h;
+    export let autoloop;
+    export let size;
 
     let hydrasynth;
     let h0
 
-    export let synth;
-    export let data;
-    beforeUpdate(()=>{
-        
-    })
     onMount(() => {
         h0 = new HydraRenderer({
             makeGlobal: false,
-            autoLoop: true,
+            autoLoop: {autoloop},
             detectAudio: false,
             precision: 'highp',
             canvas: hydracanvas,
         })
-    
         hydrasynth = h0.synth;
-        //hydrasynth.resize(w,h)
-        console.log(h0.canvas)
     });
 
     afterUpdate(() => {
@@ -34,14 +30,22 @@
 
 <canvas 
     bind:this={hydracanvas}
+    class={size}
     width={w}
     height={h}
-    style="width:{w/2}px; height:100vh; position:relative; top:0; left:0" />
+    style="width:{w}px; position:relative; top:0; float:left" />
 
 <style>
-	canvas {
+	.big {
         min-width:100%;
 		max-width: 100vw;
 		height: 100%;
+        background-color: white;
 	}
+
+    .thumbnail{
+        height:100%;
+        max-width: 100%;
+        background-color: white;
+    }
 </style>
