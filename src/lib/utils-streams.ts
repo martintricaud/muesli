@@ -1,13 +1,12 @@
 import Kefir from "kefir";
 import * as R from 'ramda';
 
-export const keydown_ = key => Kefir.fromEvents(window,'keydown').filter(e=>e.key == key)
-export const keyup_ = key => Kefir.fromEvents(window,'keyup').filter(e=>e.key == key)
 export const mouseenter_ = el => Kefir.fromEvents(el, 'mouseenter');
 export const mouseleave_ = el => Kefir.fromEvents(el, 'mouseleave');
 export const mousedown_ = Kefir.fromEvents(window, 'mousedown');
 export const mouseup_ = Kefir.fromEvents(window, 'mouseup');
-export const shiftdown_ = Kefir.fromEvents(window,'keydown').filter(e=>e.shiftKey);
+export const shiftdown_ = Kefir.fromEvents(window,'keydown').filter((e:KeyboardEvent)=>e.shiftKey);
+export const keydown_ =  key => Kefir.fromEvents(window,'keydown').filter((e:KeyboardEvent)=>e.key == key);
 export const shiftup_ = Kefir.fromEvents(window, 'keyup')
 export const mousemove_ = Kefir.fromEvents(window, 'mousemove');
 export const mousewheel_= Kefir.fromEvents(window,'wheel');
@@ -38,12 +37,10 @@ a_.flatMap((a) =>
     .takeUntilBy(r_)
 );
 
-// return {atk:atk, sus:sus}}
-
 export const counterPlus_ = (el,end) => mouseenter_(el).flatMap(
   (e)=>Kefir.interval(10,{movementX:10}).takeUntilBy(end))
 
- export const plus_ = asr(mousedown_,Kefir.interval(10,{movementX:"test"}),mouseup_)
+export const plus_ = asr(mousedown_,Kefir.interval(10,{movementX:"test"}),mouseup_)
 
 export const counterMinus_ = (el,end) => mouseenter_(el).flatMap(
     (e)=>Kefir.interval(10,{movementX:0}).takeUntilBy(end))
@@ -58,16 +55,6 @@ export const whileOn = (el,ticker) => asr(
   mouseleave_(el)
 )
 
-
-
-
-
-
-// export const applyDelta = (xy)=>{
-//   let b = g=>{return {x:val=>val+g(xy.movementX),  y:val=>val+g(xy.movementY)}}
-//   let a = {...xy, applyDelta:b}
-//   return a
-// }
 
 export const obs = f => x => x.onValue(val=>f(val))
 
