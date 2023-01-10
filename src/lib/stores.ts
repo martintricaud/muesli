@@ -6,10 +6,11 @@ import { prng_alea } from 'esm-seedrandom';
 import type * as T from './types'
 
 type num = number
+type bool = boolean
 type str = string
 type E<T> = (x: T) => T //endomorphism type
 type P<T> = Record<str, T> //record with fields of type t
-type T_Solver = (u: P<E<num>>, p: P<num>) => P<E<num>>
+type T_Solver = (u: P<E<num|bool>>, p: P<num|bool>) => P<E<num|bool>>
 let u32a = Uint32Array;
 
 let randomForward = axes => _n => R.zipObj(
@@ -34,106 +35,11 @@ export const random_adjunction = (axes) => [
 	(X) => randomReverse(X)
 ]
 
-export function sync(left, right) {
-	const A = writable()
-	const B = writable()
+let e = 0.000001
 
-	// called when store_a.set is called or its binding reruns
-	function set_A($a) {
-		A.update(_x => $a);
-		B.update(_x => left($a));
-	}
-
-	// called when store_b.set is called or its binding reruns
-	function set_B($b) {
-		A.update(_x => right($b));
-		B.update(_x => $b);
-	}
-
-	function update_A($ua) {
-		A.update($ua)
-		B.update(R.compose($ua, left))
-	}
-
-	function update_B($ub) {
-		B.update($ub)
-		A.update(R.compose($ub, right))
-	}
-
-	return [
-		{ subscribe: A.subscribe, set: set_A, update: update_A },
-		{ subscribe: B.subscribe, set: set_B, update: update_B },
-	];
-}
-
-
-
-const getEvolverWithConstraints = (obj, evolver, constraints) =>
-	R.reduce(
-		(acc, { predicate, g }) =>
-			R.cond([
-				[predicate, R.always(acc)],
-				[R.T, R.always(R.compose(acc, g))]
-			])(obj),
-		evolver,
-		constraints
-	);
-
-
-
-// Hard coded simplex solver that maintains constraints between fields a, b, c0, c1, z of an object
-export function solve(update: P<E<num>>, param: P<num>, locked = false) {
-	const willStayUnder = (target, bound, tolerance = 0) => (bound - target) >= tolerance
-	const willStayBetween = (target, [m, M]) => willStayUnder(m, target[0]) && willStayUnder(R.last(target), M)
-	let e = 0.01 //tolerance
-	const fields: str[] = ["a", "z", "b", "c0", "c1"]
-	const [fa, fz, fb, fc0, fc1]: E<num>[] = R.map((x: E<num>) => x ??= R.identity, R.props(fields, update)) //fields that are not updated are updated with the identity
-	const [va, vz, vb, vc0, vc1]: num[] = R.props(fields, param)
-	let gz, gb, ga, gc0, gc1
-	[gc0, gc1] = willStayUnder(e, fc1(vc1) - fc0(vc0)) ? [fc0, fc1] : [x => fc1(x - e / 2) - e / 2, x => fc0(x + e / 2) + e / 2]
-	let boundsOfZ: [num, num] = [0, gc1(vc1) - gc0(vc0)]
-	gz = willStayBetween([fz(vz)], boundsOfZ) ? fz : R.pipe(fz, R.clamp(...boundsOfZ))
-	let boundsOfB: [num, num] = [gc0(vc0) + gz(vz) / 2, gc1(vc1) - gz(vz) / 2]
-	gb = willStayBetween([fb(vb)], boundsOfB) ? fb : R.pipe(fb, R.clamp(...boundsOfB))
-	let boundsOfA: [num, num] = [gb(vb) - gz(vz) / 2, gb(vb) + gz(vz) / 2]
-	ga = willStayBetween([fa(va)], boundsOfA) ? fa : R.pipe(fa, R.clamp(...boundsOfA))
-	let res: P<E<num>> = { a: ga, z: gz, b: gb, c0: gc0, c1: gc1 }
-	return res
-}
-
-const composeEvolver = (evolver1, evolver2) => R.mergeWith((f,g)=>R.compose(f,g),evolver1, evolver2)
-const pipeEvolver = (evolver1, evolver2) => R.mergeWith((f,g)=>R.pipe(f,g),evolver1, evolver2)
-
-const getEvolverIfViolatesPredicate = (obj, evolver, predicate, g) =>
-	R.cond([
-		[predicate, R.always(evolver)],
-		[R.T, R.always(pipeEvolver(evolver, g))]
-	])(obj);
-
-export function solve3(update: P<E<num>>, v: P<num>, locked = false) {
-	let e = 0 // tolerance
-	const g0: P<E<num>> = R.mapObjIndexed((x: num,i) => update[i]== undefined ? R.identity: update[i], v) // fields that are not updated are updated with the identity
-	let g1 = getEvolverIfViolatesPredicate(v, g0, obj => obj.c1 - obj.c0 >=e, {
-		c0: x => g0.c1(x - e / 2) - e / 2,
-		c1: x => g0.c0(x + e / 2) + e / 2
-	})
-	let g2 = getEvolverIfViolatesPredicate(v, g1, obj => obj.z <= obj.c1 - obj.c0 && obj.z >= e, {
-		z: R.clamp(e, g1.c0(v.c0)-g1.c1(v.c1))
-	})
-	let g3 = getEvolverIfViolatesPredicate(v, g2, obj => obj.b >= obj.c0+obj.z/2 && obj.b <=  obj.c1-obj.z/2, {
-		b: R.clamp(g2.c0(v.c0)+g2.z(v.z)/2, g2.c1(v.c1)-g2.z(v.z)/2)
-	})
-	let g4 = getEvolverIfViolatesPredicate(v, g3, obj => obj.a >= obj.b - obj.z / 2 && obj.a <= obj.b + obj.z / 2, {
-		a: R.clamp(g3.b(v.b) - g3.z(v.z) / 2, g3.b(v.b) + g3.z(v.z) / 2)
-	})
-	return g4
-}
-
-let e = 0.01
-
-export const solve4 = constraints => (update: P<E<num>>, v: P<num>) => {
-	const g0: P<E<num>> = R.mapObjIndexed((x: num,i) => update[i]== undefined ? R.identity: update[i], v) // fields that are not updated are updated with the identity
-	return constraints.reduce((evolver, {predicate, g}) => getEvolverIfViolatesPredicate(v, evolver, predicate, g(evolver, v)), g0)
+export const solve = constraints => (update: P<E<num|bool>>, v: P<num|bool>) => {
+	const g0: P<E<num|bool>> = R.mapObjIndexed((x: num,i) => update[i]== undefined ? R.identity: update[i], v) // fields that are not updated are updated with the identity
+	return constraints.reduce((evolver, {predicate, g}) => U.constrainEvolver(v, evolver, predicate, g(evolver, v)), g0)
 }
 
 export const constraintsPreset = [
@@ -150,7 +56,7 @@ export const constraintsPreset = [
 		predicate: obj => obj.z <= obj.c1 - obj.c0 && obj.z >= e,
 		g: (f,v) => {
 			return {
-				z: R.clamp(e, f.c0(v.c0)-f.c1(v.c1))
+				z: x=>R.clamp(e, f.c1(v.c1)-f.c0(v.c0),f.z(x))
 			}
 		}
 	},
@@ -158,7 +64,7 @@ export const constraintsPreset = [
 		predicate: obj => obj.b >= obj.c0+obj.z/2 && obj.b <=  obj.c1-obj.z/2,
 		g: (f,v) => {
 			return {
-				b: R.clamp(f.c0(v.c0)+f.z(v.z)/2, f.c1(v.c1)-f.z(v.z)/2)
+				b: x=>R.clamp(f.c0(v.c0)+f.z(v.z)/2, f.c1(v.c1)-f.z(v.z)/2, f.b(x))
 			}
 		}
 	},
@@ -166,13 +72,13 @@ export const constraintsPreset = [
 		predicate: obj => obj.a >= obj.b - obj.z / 2 && obj.a <= obj.b + obj.z / 2, 
 		g: (f,v) => {
 			return {
-				a: R.clamp(f.b(v.b) - f.z(v.z) / 2, f.b(v.b) + f.z(v.z) / 2)
+				a: x=> R.clamp(f.b(v.b) - f.z(v.z) / 2, f.b(v.b) + f.z(v.z) / 2, f.a(x))
 			}
 		}
 	}
 ]
 // lifts a solver to array of objects
-export const liftSolve = (solver: T_Solver, F: P<P<E<num>>>) => (X: P<P<num>>) => R.evolve(U.mergePartialWith(solver, F, X), X)
+export const liftSolve = (solver: T_Solver, F: P<P<E<num|bool>>>) => (X: P<P<num|bool>>) => R.evolve(U.mergePartialWith(solver, F, X), X)
 
 
 export function liftedConstraintStore(ranges: Array<[str, P<any>]>, _epsilon: num = 0.01) {
@@ -185,14 +91,14 @@ export function liftedConstraintStore(ranges: Array<[str, P<any>]>, _epsilon: nu
 		return r
 	}
 	//initialize object with default args in each field.
-	let dataObj: P<P<num>> = R.fromPairs(ranges)
-	let X0: P<P<num>> = R.map(computeDefault, dataObj)
+	let dataObj: P<P<num|bool>> = R.fromPairs(ranges)
+	let X0: P<P<num|bool>> = R.map(computeDefault, dataObj)
 	let F0 = U.deepMap(R.always, dataObj)
-	const Params: Writable<P<P<num>>> = writable(liftSolve(solve4(constraintsPreset), F0)(X0)) //store of records
+	const Params: Writable<P<P<num|bool>>> = writable(liftSolve(solve(constraintsPreset), F0)(X0)) //store of records
 	const Keys: Writable<str[]> = writable(R.map(x => x[0], ranges))
 
-	function set_S(X: P<P<num>>) {
-		Params.update(liftSolve(solve4(constraintsPreset), U.deepMap(R.always, X)))
+	function set_S(X: P<P<num|bool>>) {
+		Params.update(liftSolve(solve(constraintsPreset), U.deepMap(R.always, X)))
 	}
 
 	return [
@@ -233,7 +139,7 @@ export function MuesliStore(data) {
 
 	function updateH_global(f_h) {
 		H_global.update(x => U.clamp('0', U.fMAX_H($Bits, $Keys.length), f_h(x)))
-		let hx: P<num> = R.zipObj($Keys, W.forward(get(H_global), $Bits, $Keys.length))
+		let hx: P<num|bool> = R.zipObj($Keys, W.forward(get(H_global), $Bits, $Keys.length))
 		Params.set(R.mergeWith(R.set(lensB), hx, $Params))
 	}
 

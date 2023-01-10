@@ -1,62 +1,76 @@
 <script>
-    import { onMount, createEventDispatcher } from 'svelte';
+	import { subscribe } from 'svelte/internal';
+    import { onMount, createEventDispatcher, tick } from 'svelte';
     import * as R from 'ramda';
-    import * as K from 'kefir';
-    import * as S from './utils-streams';
     import * as U from './utils';
-    let vw, vh;
+    import { writable } from 'svelte/store';
     export let ev, name, equipped;
-    let trackH, thumbH, trackW;
-    let isPlus_ = undefined;
-    let holdclick_ = undefined
-    const dispatch = createEventDispatcher();
 
-    $: attack = ev.atk ?? ev;
-    $: target = attack?.target;
-    $: oz = {
-        x: target?.getBoundingClientRect().left ?? attack.x, // + (target?.offsetWidth??0)/2,
-        y: target?.getBoundingClientRect().top ?? attack.y + (target?.getBoundingClientRect()?.height??0)/2,
-        w: target?.clientWidth??4,
-        h: target?.clientHeight??0
+    let vw, vh;
+    let clock = writable(0);
+    let deltaX = writable(0);
+
+    let intervalId = null;
+    function startEdgeScroll(step) {
+        intervalId = setInterval(() => {clock.update(x=>x+step)}, 50);
     }
-    // $: trackX = R.clamp(0, 500, ev.x);
-    $: trackX = ev.x
-    $: thumbY = R.clamp(attack.y - 400, attack.y + 400, ev.y) - 10;
-    $: delta = U.lerp(0, 400, 1, 100, Math.abs(thumbY - attack.y));
-    
-    $: dispatch(
-        'effect',
-        R.modify('movementX', (x) => x / delta, ev)
-    );
 
-    onMount(() => {
-        isPlus_ = S.mousemove_.map(x=>x?.target.classList.contains('plus'));
-        holdclick_ = S.asr(S.mousedown_,K.interval(10,{movementX:delta}),S.mouseup_).filterBy(isPlus_);
-    });
+    function stopEdgeScroll(ev) {
+        clock.set(0)
+        clearInterval(intervalId);
+    }
+
+    const dispatch = createEventDispatcher();
+    $: [attack, target] = [
+        ev.atk ?? ev, 
+        attack?.target
+    ]
+
+    $: trackX = R.clamp(attack.x - 200, attack.x + 200, ev.x);
+    $: thumbY = R.clamp(attack.y - 400, attack.y + 400, ev.y) - 10;
+    $: $deltaX = U.lerp(0, 400, 1, 100, Math.abs(thumbY - attack.y));
+    $: newEv = $clock != 0 ? R.modify('movementX', (x) => Math.sign($clock)*10 / 10, ev) : R.modify('movementX', (x) => x / $deltaX, ev)
+    $: rect = newEv?.atk?.target?.getBoundingClientRect() ?? {x:attack.x, y:attack.y, width: 4, height:0}
+    $: dispatch('effect',newEv)
+
 </script>
 
 <svelte:window bind:innerWidth={vw} bind:innerHeight={vh} />
 <div class="instrument">
     <div
-    class="orthozoom"
-    class:inactive={!equipped || ev.buttons == 0}
-    class:off={!R.has('atk', ev)}
-    style="top:{Math.min(oz.y, thumbY)}px; left:{oz.x-2}px; height:{Math.abs(thumbY - oz.y) + oz.h/2}px; width:{oz.w}px"
-    bind:clientWidth={trackW}
-/>
+        class="orthozoom"
+        class:inactive={!equipped || ev.buttons == 0}
+        class:off={!R.has('atk', ev)}
+        style="top:{Math.min(rect.y, thumbY)}px; left:{rect.x - 2}px; height:{Math.abs(thumbY - rect.y) +
+            rect.height / 2}px; width:{rect.width}px"
+        bind:clientWidth={rect.width}
+    />
 
-<div
-    id="plus"
-    class="plus machine"
-    class:inactive={!equipped}
-    style="top:{thumbY}px; left:{trackX + 10}px;"
->
-    +
-</div>
-<div class="minus machine" class:inactive={!equipped} style="top:{thumbY}px; left:{trackX - 30}px;">
-    -
-</div>
-
+    <div class="ruler" style="left:{Math.min(trackX,rect.x-2)}px; top:{Math.min(rect.y, thumbY)}, width:{Math.abs(trackX-rect.x+2)}px"></div>
+    <div
+        id="plus"
+        class="plus machine"
+        class:inactive={!equipped}
+        style="top:{thumbY}px; left:{trackX + 10}px;"
+        on:mouseenter={()=>startEdgeScroll(1)}
+        on:mouseup={stopEdgeScroll}
+        on:mouseleave={stopEdgeScroll}
+        on:mousemove={ev=>clock.set(0)}
+        
+    >
+        +
+    </div>
+    <div
+        class="minus machine"
+        class:inactive={!equipped}
+        style="top:{thumbY}px; left:{trackX - 30}px;"
+        on:mouseenter={()=>startEdgeScroll(-1)}
+        on:mouseup={stopEdgeScroll}
+        on:mouseleave={stopEdgeScroll}
+        on:mousemove={ev=>clock.set(0)}
+    >
+        -
+    </div>
 </div>
 
 <slot />
@@ -68,8 +82,8 @@
         position: fixed;
         z-index: 100;
         pointer-events: none;
-        border-left:2px solid red;
-        border-right:2px solid red;
+        border-left: 2px solid red;
+        border-right: 2px solid red;
         box-sizing: content-box;
     }
 
@@ -114,5 +128,12 @@
 
     .off {
         /* height:20px; */
+    }
+
+    .ruler{
+        position: fixed;
+        background-color: red;
+        height:2px;
+        width:100px
     }
 </style>

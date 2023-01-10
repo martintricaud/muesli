@@ -5,7 +5,7 @@ export type num = number
 export type param = {name: string} & P<num>
 export type f_param = {name: string} & P<E<num>>
 export interface PresetV{
-    h_local: string, h_global:string, ranges: Array<[string, Record<string, number>]>, z:number
+    h_local: string, h_global:string, ranges: Array<[string, Record<string, number|boolean>]>, z:number
 }
 export interface Preset extends PresetV{
     name:string

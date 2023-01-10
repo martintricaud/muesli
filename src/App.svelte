@@ -1,9 +1,8 @@
 <script lang ts>
   import { writable, get } from 'svelte/store';
   import { onMount } from 'svelte';
-  import { random_adjunction, MuesliStore, liftSolve, solve, PresetStore, solve3, solve4, constraintsPreset } from './lib/stores';
-  import { mousewheel_ } from './lib/utils-streams';
-  import { synth2, preset2, preset2bis } from './lib/data';
+  import { random_adjunction, MuesliStore, liftSolve, PresetStore, solve, constraintsPreset } from './lib/stores';
+  import { synth2, preset2bis } from './lib/data';
   import { wasm_functions as W } from './main.js';
   import * as U from './lib/utils';
   import * as S from './lib/utils-streams';
@@ -16,27 +15,20 @@
   import IFix from './lib/IFix.svelte';
   import { prng_alea } from 'esm-seedrandom';
 
-  /*
-    NAMING & ABBREVIATIONS
-    ff = feedforward
-    w = width
-    h = height
-    ev = event
-    xPre = previous element
-    xCur = current element
-    xNex = next element
+  /** 
+    * naming: ff = feedforward
+    * naming: w = width
+    * naming: h = height
+    * naming: ev = event
+    * naming: xPre = previous element
+    * naming: xCur = current element
+    * naming: xNex = next element
   */
-  // BINDINGS FOR DOM ELEMENTS AND THEIR SIZES
+  
+  /* naming: BINDINGS FOR DOM ELEMENTS AND THEIR SIZES / STYLE CLASSES */ 
 
-  let iw,
-    ih,
-    macro_w,
-    track_w,
-    range_w,
-    thumb_w = 5;
-  let fooWidth;
-  let hidden;
-  let noscroll;
+  let iw, ih, macro_w, track_w, range_w, thumb_w = 5;
+  let hidden, noscroll;
 
   let instruments = {
     eraser2: {
@@ -113,9 +105,6 @@
   $: data = R.toPairs($P);
   $: data_a = R.pluck('a', $P);
 
-  // STREAMS AND THEIR OBSERVERS
-  let wheel_, effect;
-  wheel_ = effect = undefined;
 
   // EFFECTFUL FUNCTIONS - modify reactive values, can be thought of has handlers
 
@@ -124,8 +113,10 @@
   }
 
   function fix_effect(ev) {
-    //if a param is fixed, its update function is an empty object
-    //fixing a param means saving it in a preset, and mergeDeepWithKey 
+    /** 
+     * if the target has a "lock" value this flips it.
+     * unlocking the target should reinsert it at the right location in the array.
+    */
     console.log(ev);
   }
 
@@ -140,7 +131,7 @@
       }
       if (store == 2) {
         let f0 = U.add(U.scale(0, track_w, $P[key].c0, $P[key].c1, e.movementX));
-        f = liftSolve(solve4(constraintsPreset), U.deepObjOf([key, field], f0));
+        f = $P[key].locked ? R.identity: liftSolve(solve(constraintsPreset), U.deepObjOf([key, field], f0));
       }
       muesli?.[store]?.update(f);
     }
@@ -158,10 +149,9 @@
   }
 
   function click_effect(ev) {
-    let target = ev.target;
     if (equipped == 'eraser') {
-      target.classList.contains('erasable')
-        ? muesli?.[target.dataset?.store]?.update(R.omit(U.stringToPath(target.dataset?.path)))
+      ev.target.classList.contains('erasable')
+        ? muesli?.[ev.target.dataset?.store]?.update(R.omit(U.stringToPath(ev.target.dataset?.path)))
         : console.log('nothing to erase');
     } else if (equipped == 'lock') {
     }
@@ -177,7 +167,7 @@
   function wheel_effect(e) {
     let curr = R.clamp(0.0000001, 1, $zf + U.scale(0, ih * 100, 0.0000001, 1, e.wheelDeltaY));
     let f = (x) => (curr / $zf) * x;
-    muesli[2].update(liftSolve(solve4(constraintsPreset), R.map(R.always(R.objOf('z', f)), $P)));
+    muesli[2].update(liftSolve(solve(constraintsPreset), R.map(R.always(R.objOf('z', f)), $P)));
     zf.set(curr);
   }
 
@@ -189,7 +179,7 @@
     S.mousemove_.thru(S.obs(feedback));
     S.mousedown_.thru(S.obs(feedback));
     S.drag_.thru(S.obs(feedback));
-    wheel_ = S.asr(S.capture($zf, S.shiftdown_), mousewheel_, S.shiftup_).thru(S.obs(wheel_effect));
+    S.asr(S.capture($zf, S.shiftdown_), S.mousewheel_, S.shiftup_).thru(S.obs(wheel_effect));
   });
 </script>
 
@@ -198,8 +188,8 @@
   bind:innerWidth={iw}
   on:keydown={(ev) => (noscroll = ev.shiftKey)}
   on:keyup={(ev) => (noscroll = ev.shiftKey)}
-  on:keydown={(ev) => (hidden = ev.key == ' ')}
-  on:keyup={(ev) => (hidden = ev.key != ' ')}
+  on:keydown={(ev) => hidden = ev.key == ' '? true : hidden && true }
+  on:keyup={(ev) => hidden = ev.key == ' '? false : hidden || false }
 />
 <main class="grid">
   <div class:hidden={!hidden} class="instruments" style="left:100px; top:0px; z-index:1000">

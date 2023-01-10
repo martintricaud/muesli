@@ -61,6 +61,12 @@ donc 2^32*n = 10^(9,632n)
 disons 10^(10ndim)
 donc il faut 10*ndim slots
 
+il faut 10 fois le tiers de la resolution totale
+
+the slowest one can go is 1px = 1unit of the range. ie divide movementX by 10*rangesize*0.301
+or don't divide movement, change target scale instead.
+
+
 passer directement du dilletantisme edgy de ma vingtaine à une quarantaine low key et néanmoins rayonnante de mec en paix avec lui même, et skipper l’arc “trentenaire with cringe online interactions”
 
 le Scrabble, les rêves lucides et imiter les doubleurs des émissions debiles sur MTV  

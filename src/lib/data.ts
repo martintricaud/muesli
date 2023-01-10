@@ -74,26 +74,26 @@ export const preset2 = [
     ["po2", { c0: 0.01, c1: 10, Lr: x => x, Lt: x => x, fullname: "posterize 2" }],
 ];
 
-export const preset2bis: Array<[string, Record<string, number>]> = [
-    ["os1f", { c0: 0, c1: 100 }], //freq, float, no right bound but above 100 is a lot
-    ["os1o", { c0: 0, c1: 10 }], //offset
-    ["co1r", { c0: 0, c1: 10 }], //red, int
-    ["co1g", { c0: 0, c1: 10 }], //green, int
-    ["co1b", { c0: 0, c1: 10 }], //blue, int
-    ["sa10", { c0: 0, c1: 10 }], //saturation, int
-    ["lu10", { c0: 0, c1: 1 }],
-    ["oskf", { c0: 0, c1: 100 }], //freq, float, no right bound but above 100 is a lot
-    ["modk", { c0: 0, c1: 1 }],
-    ["modRx", { c0: 0, c1: 10 }],
-    ["modRy", { c0: 0, c1: 10 }],
-    ["modOx", { c0: 0, c1: 10 }],
-    ["modOy", { c0: 0, c1: 10 }],
-    ["oscModRf", { c0: 0, c1: 100 }],
-    ["rot", { c0: 0, c1: 2 * Math.PI }],
-    ["mod", { c0: 0, c1: 1 }],
-    ["sca", { c0: 0.01, c1: 10 }],
-    ["po1", { c0: 0.01, c1: 10 }],
-    ["po2", { c0: 0.01, c1: 10 }],
+export const preset2bis: Array<[string, Record<string, number | boolean>]> = [
+    ["os1f", { c0: 0, c1: 100, locked:false }], //freq, float, no right bound but above 100 is a lot
+    ["os1o", { c0: 0, c1: 10, locked:false }], //offset
+    ["co1r", { c0: 0, c1: 10, locked:false }], //red, int
+    ["co1g", { c0: 0, c1: 10, locked:false }], //green, int
+    ["co1b", { c0: 0, c1: 10, locked:false }], //blue, int
+    ["sa10", { c0: 0, c1: 10, locked:false }], //saturation, int
+    ["lu10", { c0: 0, c1: 1, locked:false }],
+    ["oskf", { c0: 0, c1: 100, locked:false }], //freq, float, no right bound but above 100 is a lot
+    ["modk", { c0: 0, c1: 1, locked:false }],
+    ["modRx", { c0: 0, c1: 10, locked:false }],
+    ["modRy", { c0: 0, c1: 10, locked:false }],
+    ["modOx", { c0: 0, c1: 10, locked:false }],
+    ["modOy", { c0: 0, c1: 10, locked:false }],
+    ["oscModRf", { c0: 0, c1: 100, locked:false }],
+    ["rot", { c0: 0, c1: 2 * Math.PI, locked:false }],
+    ["mod", { c0: 0, c1: 1, locked:false }],
+    ["sca", { c0: 0.01, c1: 10, locked:false }],
+    ["po1", { c0: 0.01, c1: 10, locked:false }],
+    ["po2", { c0: 0.01, c1: 10, locked:false }],
 ];
 
 // export const macros = [["h_global", {
