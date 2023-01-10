@@ -12,6 +12,13 @@ type E<T> = (x: T) => T //endomorphism type
 type P<T> = Record<str, T> //record with fields of type t
 type T_Solver = (u: P<E<num|bool>>, p: P<num|bool>) => P<E<num|bool>>
 let u32a = Uint32Array;
+interface PresetV{
+    h_local: string, h_global:string, ranges: Array<[string, Record<string, number|boolean>]>, z:number
+}
+interface Preset extends PresetV{
+    name:string
+}
+
 
 let randomForward = axes => _n => R.zipObj(
 	axes,
@@ -165,21 +172,21 @@ export function MuesliStore(data) {
 	]
 }
 
-export function PresetStore(init: T.Preset[] | []) {
-	const Presets: Writable<T.Preset[] | []> = writable(init);
+export function PresetStore(init: Preset[] | []) {
+	const Presets: Writable<Preset[] | []> = writable(init);
 
-	function addPreset(v: T.Preset, i: num = 10) {
-		let f = (newVal, id = 10) => (presets: T.Preset[]) => R.insert(
+	function addPreset(v: Preset, i: num = 10) {
+		let f = (newVal, id = 10) => (presets: Preset[]) => R.insert(
 			id, { ...{ name: U.assignDefaultName(R.pluck('name', presets)) }, ...newVal, }, presets
 		);
 		Presets.update(f(v, i))
 	}
 	function deletePreset(id: num) {
-		let f = (id: num) => (presets: T.Preset[]) => R.remove(id, 1, presets)
+		let f = (id: num) => (presets: Preset[]) => R.remove(id, 1, presets)
 		Presets.update(f(id))
 	}
-	function modifyPreset(v: T.Preset, i: num) {
-		let f = (newValue: T.Preset, id: num) => (presets: T.Preset[]) => R.adjust(id, R.mergeLeft(newValue), presets)
+	function modifyPreset(v: Preset, i: num) {
+		let f = (newValue: Preset, id: num) => (presets: Preset[]) => R.adjust(id, R.mergeLeft(newValue), presets)
 		Presets.update(f(v, i))
 		//call update with a deepMerge
 	}
