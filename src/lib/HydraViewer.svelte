@@ -33,19 +33,12 @@
     class={size}
     width={w}
     height={h}
-    style="width:{w}px; position:relative; top:0; float:left" />
+/>
 
 <style>
-	.big {
+	/* .big {
         min-width:100%;
 		max-width: 100vw;
-		height: 100%;
-        background-color: white;
-	}
-
-    .thumbnail{
-        height:100%;
-        max-width: 100%;
-        background-color: white;
-    }
+        
+	} */
 </style>

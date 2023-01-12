@@ -1,6 +1,5 @@
 <script>
-	import { subscribe } from 'svelte/internal';
-    import { onMount, createEventDispatcher, tick } from 'svelte';
+    import { createEventDispatcher } from 'svelte';
     import * as R from 'ramda';
     import * as U from './utils';
     import { writable } from 'svelte/store';
@@ -12,65 +11,75 @@
 
     let intervalId = null;
     function startEdgeScroll(step) {
-        intervalId = setInterval(() => {clock.update(x=>x+step)}, 50);
+        intervalId = setInterval(() => {
+            clock.update((x) => x + step);
+        }, 50);
     }
 
     function stopEdgeScroll(ev) {
-        clock.set(0)
+        clock.set(0);
         clearInterval(intervalId);
     }
 
     const dispatch = createEventDispatcher();
-    $: [attack, target] = [
-        ev.atk ?? ev, 
-        attack?.target
-    ]
+    $: [attack, target] = [ev.atk ?? ev, attack?.target];
 
     $: trackX = R.clamp(attack.x - 200, attack.x + 200, ev.x);
     $: thumbY = R.clamp(attack.y - 400, attack.y + 400, ev.y) - 10;
     $: $deltaX = U.lerp(0, 400, 1, 100, Math.abs(thumbY - attack.y));
-    $: newEv = $clock != 0 ? R.modify('movementX', (x) => Math.sign($clock)*10 / 10, ev) : R.modify('movementX', (x) => x / $deltaX, ev)
-    $: rect = newEv?.atk?.target?.getBoundingClientRect() ?? {x:attack.x, y:attack.y, width: 4, height:0}
-    $: dispatch('effect',newEv)
-
+    $: newEv =
+        $clock != 0
+            ? R.modify('movementX', (x) => (Math.sign($clock) * 10) / 10, ev)
+            : R.modify('movementX', (x) => x / $deltaX, ev);
+    $: rect = newEv?.atk?.target?.getBoundingClientRect() ?? {
+        x: attack.x+1,
+        y: attack.y,
+        width: 4,
+        height: 0,
+    };
+    $: dispatch('effect', newEv);
 </script>
 
 <svelte:window bind:innerWidth={vw} bind:innerHeight={vh} />
 <div class="instrument">
     <div
-        class="orthozoom"
-        class:inactive={!equipped || ev.buttons == 0}
-        class:off={!R.has('atk', ev)}
-        style="top:{Math.min(rect.y, thumbY)}px; left:{rect.x - 2}px; height:{Math.abs(thumbY - rect.y) +
-            rect.height / 2}px; width:{rect.width}px"
-        bind:clientWidth={rect.width}
-    />
-
-    <div class="ruler" style="left:{Math.min(trackX,rect.x-2)}px; top:{Math.min(rect.y, thumbY)}, width:{Math.abs(trackX-rect.x+2)}px"></div>
-    <div
-        id="plus"
-        class="plus machine"
+        class="machine minus"
         class:inactive={!equipped}
-        style="top:{thumbY}px; left:{trackX + 10}px;"
-        on:mouseenter={()=>startEdgeScroll(1)}
+        style="top:{thumbY}px; left:{trackX - 30}px;"
+        on:mouseenter={() => startEdgeScroll(-1)}
         on:mouseup={stopEdgeScroll}
         on:mouseleave={stopEdgeScroll}
-        on:mousemove={ev=>clock.set(0)}
-        
+        on:mousemove={(ev) => clock.set(0)}
+    >
+        -
+    </div>
+    <div
+        class="machine"
+        class:inactive={!equipped}
+        style="top:{thumbY}px; left:{trackX + 10}px;"
+        on:mouseenter={() => startEdgeScroll(1)}
+        on:mouseup={stopEdgeScroll}
+        on:mouseleave={stopEdgeScroll}
+        on:mousemove={(ev) => clock.set(0)}
     >
         +
     </div>
     <div
-        class="minus machine"
-        class:inactive={!equipped}
-        style="top:{thumbY}px; left:{trackX - 30}px;"
-        on:mouseenter={()=>startEdgeScroll(-1)}
-        on:mouseup={stopEdgeScroll}
-        on:mouseleave={stopEdgeScroll}
-        on:mousemove={ev=>clock.set(0)}
-    >
-        -
-    </div>
+        class="orthozoom"
+        class:inactive={!equipped || ev.buttons == 0}
+        class:off={!R.has('atk', ev)}
+        style="top:{Math.min(rect.y, thumbY)}px; left:{rect.x}px; height:{
+        Math.abs(thumbY - rect.y) + rect.height / 2}px; width:{rect.width}px"
+        bind:clientWidth={rect.width}
+    />
+
+    <div
+        class="ruler"
+        style="left:{Math.min(trackX, rect.x - 2)}px; top:{Math.min(
+            rect.y,
+            thumbY
+        )}, width:{Math.abs(trackX - rect.x + 2)}px"
+    />
 </div>
 
 <slot />
@@ -82,8 +91,8 @@
         position: fixed;
         z-index: 100;
         pointer-events: none;
-        border-left: 2px solid red;
-        border-right: 2px solid red;
+        outline: 2px solid red;
+        /* outline-right: 2px solid red; */
         box-sizing: content-box;
     }
 
@@ -101,10 +110,10 @@
         background-color: lightgray;
     }
 
-    .minus {
+    /* .minus {
         left: -10px;
         top: -10px;
-    }
+    } */
 
     .minus::after {
         content: '';
@@ -116,9 +125,7 @@
         border: 2px solid white;
         box-sizing: border-box;
         background-color: none;
-        /* box-shadow: 5px 5px 0px 1px rgba(0, 0, 140, 0.4); */
         pointer-events: none;
-        background-color: red;
         z-index: -200;
     }
 
@@ -126,14 +133,10 @@
         display: none;
     }
 
-    .off {
-        /* height:20px; */
-    }
-
-    .ruler{
+    .ruler {
         position: fixed;
         background-color: red;
-        height:2px;
-        width:100px
+        height: 2px;
+        width: 100px;
     }
 </style>

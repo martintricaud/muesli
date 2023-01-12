@@ -1,6 +1,5 @@
 import { wasm_functions as W } from '../main.js';
 import * as R from 'ramda'
-import * as T from './types'
 
 type num = number
 type num2 = [num,num]
@@ -42,6 +41,7 @@ export function assignDefaultName(arr:str[]) {
   return "preset" + a
 }
 
+
 let galois_pullBack = (adj) => (f) => (x) => adj[1](f(adj[0](x)))
 
 
@@ -71,7 +71,7 @@ export function lerpLens(valField, range:(obj: R<num>)=>num2, otherRange){
 
 export function stringToPath(s:str | undefined){
   let res = R.split(' ',s)
-  let res2:Array<str|num> = R.map((x:any)=>isNaN(x)?x:Number(x), res)
+  let res2:Array<str|num> = R.isEmpty(res)? [] : R.map((x:any)=>isNaN(x)?x:Number(x), res)
   return res2
 }
 
@@ -86,13 +86,3 @@ R.cond([
 // export function toggleFocus(name) {return R.mapObjIndexed(
 //     (x:any, k) => R.modify('equipped', k == name ? R.not : R.F, x));
 // }
-
-
-
-// let comply = (slave) => (master) => {
-//     let a = hilbert_adjunction(ax,32)[0](slave);
-//     let f = U.liftCall(R.map(v=>v[master],data));
-//     return hilbert_adjunction(ax,32)[1](f(a));
-//   };
-
-// export const applyDelta = delta => x =>

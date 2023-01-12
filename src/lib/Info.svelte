@@ -12,7 +12,5 @@
 </div>
 
 <style>
-.inactive{
-    display:none
-}
+
 </style>

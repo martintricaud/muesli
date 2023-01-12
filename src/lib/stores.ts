@@ -3,7 +3,6 @@ import * as R from 'ramda';
 import * as U from './utils';
 import { wasm_functions as W } from '../main.js';
 import { prng_alea } from 'esm-seedrandom';
-import type * as T from './types'
 
 type num = number
 type bool = boolean
@@ -95,6 +94,7 @@ export function liftedConstraintStore(ranges: Array<[str, P<any>]>, _epsilon: nu
 		r.z ??= p.c1 - p.c0;
 		r.b ??= (p.c1 - p.c0) / 2
 		r.a ??= U.lerp(0, 1, r.b - r.z / 2, r.b + r.z / 2, Math.random())
+		r.locked ??= false;
 		return r
 	}
 	//initialize object with default args in each field.
@@ -117,36 +117,46 @@ export function liftedConstraintStore(ranges: Array<[str, P<any>]>, _epsilon: nu
 export function MuesliStore(data) {
 	// B = bits per dimensions, P = parameters, K = Keys, HF = Hilbert Forward, HR = Hilbert Reverse
 	const [Params, Keys, Bits] = [...liftedConstraintStore(data.ranges), writable(32)]
-	let $Params, $Keys, $Bits
+	const Unlocked = derived([Keys,Params],([$K, $P])=>R.reject((x:str)=>R.prop('locked',$P[x]),$K))
+	let $Params, $Keys, $Bits, $Unlocked
 	Bits.subscribe(b => { $Bits = b })
 	Params.subscribe(p => { $Params = p; })
 	Keys.subscribe(k => { $Keys = k; })
+	Unlocked.subscribe(u => { $Unlocked = u; })
 
-	data.h_local ??= W.bigint_prod(0.5, U.fMAX_H($Bits, $Keys.length), 100)
-	data.h_global ??= W.bigint_prod(0.5, U.fMAX_H($Bits, $Keys.length), 100)
+
+	data.h_local ??= W.bigint_prod(0.5, U.fMAX_H($Bits, $Unlocked.length), 100)
+	data.h_global ??= W.bigint_prod(0.5, U.fMAX_H($Bits, $Unlocked.length), 100)
 	const [H_local, H_global] = [writable(data.h_local), writable(data.h_global)]
 
 	let lensA = U.lerpLens('a', obj => [obj.b - obj.z / 2, obj.b + obj.z / 2], [0, U.fMAX_A($Bits)])
 	let lensB = U.lerpLens('b', obj => [obj.c0+ obj.z / 2, obj.c1- obj.z / 2], [0, U.fMAX_A($Bits)])
 
 	function setH_local(h: string) {
-		updateH_local(R.always(U.clamp('0', U.fMAX_H($Bits, $Keys.length), h)))
+		updateH_local(R.always(U.clamp('0', U.fMAX_H($Bits, $Unlocked.length), h)))
 	}
 
 	function setH_global(h: string) {
-		updateH_global(R.always(U.clamp('0', U.fMAX_H($Bits, $Keys.length), h)))
+		updateH_global(R.always(U.clamp('0', U.fMAX_H($Bits, $Unlocked.length), h)))
 	}
 
 
 	function updateH_local(f_h) {
-		H_local.update(x => U.clamp('0', U.fMAX_H($Bits, $Keys.length), f_h(x)))
-		let hx = R.zipObj($Keys, W.forward(get(H_local), $Bits, $Keys.length))
+		// let activeKeys = R.reject((x:str)=>R.prop('locked',$Params[x]),$Keys)
+		
+		H_local.update(x => U.clamp('0', U.fMAX_H($Bits, $Unlocked.length), f_h(x)))
+		//todo: replace $Keys.length by the number of active keys
+		//maybe don't zip with entierty of $Keys, only
+		let hx = R.zipObj($Unlocked, W.forward(get(H_local), $Bits,  $Unlocked.length))
+		console.log(hx)
+		//todo: compute hx for the case where 
 		Params.set(R.mergeWith(R.set(lensA), hx, $Params))
 	}
 
 	function updateH_global(f_h) {
-		H_global.update(x => U.clamp('0', U.fMAX_H($Bits, $Keys.length), f_h(x)))
-		let hx: P<num|bool> = R.zipObj($Keys, W.forward(get(H_global), $Bits, $Keys.length))
+		// let activeKeys = R.reject((x:str)=>R.prop('lock',$Params[x]),$Unlocked)
+		H_global.update(x => U.clamp('0', U.fMAX_H($Bits, $Unlocked.length), f_h(x)))
+		let hx: P<num|bool> = R.zipObj($Unlocked, W.forward(get(H_global), $Bits,  $Unlocked.length))
 		Params.set(R.mergeWith(R.set(lensB), hx, $Params))
 	}
 
@@ -160,8 +170,9 @@ export function MuesliStore(data) {
 			R.mapObjIndexed(R.view(lensB), $Params),
 			R.mapObjIndexed(R.view(lensA), $Params)
 		]
-		H_local.set(W.inverse(u32a.from(R.props($Keys, H_local_setters)), $Bits))
-		H_global.set(W.inverse(u32a.from(R.props($Keys, H_global_setters)), $Bits))
+		H_local.set(W.inverse(u32a.from(R.props($Unlocked, H_local_setters)), $Bits))
+		//compute inverse for the subset of unlocked keys only
+		H_global.set(W.inverse(u32a.from(R.props($Unlocked, H_global_setters)), $Bits))
 	}
 	return [
 		{ subscribe: H_global.subscribe, set: setH_global, update: updateH_global },
@@ -169,6 +180,7 @@ export function MuesliStore(data) {
 		{ subscribe: Params.subscribe, set: setParams, update: updateParams },
 		{ subscribe: Keys.subscribe, set: Keys.set, update: Keys.update },
 		{ subscribe: Bits.subscribe, set: Bits.set, update: Bits.update },
+		Unlocked
 	]
 }
 

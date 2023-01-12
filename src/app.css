@@ -1,3 +1,12 @@
+
+.ui>*{
+  background-color: rgba(0, 0, 0, 0.7)
+}
+
+.grid>*>.instrument{
+  background-color: white
+}
+
 button:focus-visible {
   outline: none !important;
 }
@@ -8,9 +17,12 @@ textarea:focus,
 button:focus {
   outline: none;
 }
+ul{
+  padding: 0;
+}
 
 :root {
-  font-family: monospace;
+  /* font-family: monospace; */
   font-size: 1.2em;
   font-weight: 500;
   line-height: 24px;
@@ -24,7 +36,11 @@ button:focus {
   box-sizing: border-box;
 }
 
-*{font-family: inherit}
+
+*{
+  font-family: monospace;
+  font-size: 1rem;
+}
 
 a {
   color: #646cff;
@@ -44,11 +60,9 @@ body {
   min-height: 100vh;
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+ul {
+  margin: 0;
 }
-
 .app {
   position: absolute;
   bottom: 0;
@@ -68,44 +82,14 @@ h1 {
   left: 0;
   top: 0;
   z-index: -1;
-  background-color: rgba(0, 0, 0, 0);
   flex: 2 2 20em
 }
 
-.ui {
-  min-width: 500px;
-  grid-area: a;
-  max-height: 100%;
-  flex: 0 1 30em;
-  display: flex;
-  flex-direction: column;
-  opacity: 100;
-  background-color: rgba(0, 0, 0, 0.7);
-  color: white;
-  height: calc(100vh - 2em)
-}
-
-.converter {
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  /* background-color: lightgray; */
-  padding: 3px;
-}
-
-
-
-/* label {
-  padding: 0.5em 0.5em;
-
-  cursor: pointer;
-  transition: border-color 0s;
-} */
 
 input[type=number] {
-  border: 2px solid rgba(255, 255, 255, 0.6);
+  border: 2px solid rgba(40, 35, 35, 0.6);
   color: inherit;
-  background-color: rgba(0, 0, 0, 0.1);
+  background: inherit;
   cursor: pointer;
   transition: border-color 0.25s;
   user-select: text;
@@ -118,48 +102,39 @@ input::-webkit-inner-spin-button {
   margin: 0;
 }
 
-.menu {
+.presets {
   grid-area:c;
   display: flex;
   flex-direction: column;
   z-index: 1000;
   overflow-x: hidden;
   overflow-y: auto!important;
-  row-gap: 1em;
+  gap: 1rem 1rem;
   height: 100vh;
 }
 
-.menu>* {
-  padding: 0.2em 0.2em;
-  background-color: inherit;
-  background-color: rgba(0, 0, 0, 0.7);
+.presets>* {
   backdrop-filter: blur(3px) grayscale(60%);
   color: white;
-}
-
-.menu:first-child{
-  margin-top:1em;
-
-}
-
-.preset {
-  max-height: 100%;
-  width:160px;
-  height: 100px;
   vertical-align: middle;
-}
+  background-color: rgba(0,0,0,0.7)
 
-.preset>span{
+  /* border: 2px solid red; */
+}
+.presets>*>span {
   display: block;
   position: absolute;
   float: left;
   background-color: rgba(0,0,0,0.7)
 }
 
-.preset:hover {
+.presets:first-child{
+  margin-top:1rem;
+}
+
+.presets>*:hover {
   filter:brightness(150%);
   font-weight: bold;
-  
 }
 
 .noscroll{
@@ -168,27 +143,25 @@ input::-webkit-inner-spin-button {
 }
 
 .sliders {
+  grid-area: a;
+  min-width: 500px;
   display: flex;
   flex-direction: column;
   row-gap: 0.5ex;
   border-bottom: 1px solid black;
-  padding: 0;
   overflow-y: scroll;
   overflow-x: scroll;
-  flex: initial
+  margin-bottom: 1rem;
 }
 
 .sliders>li {
+  padding: 0 1rem;
   display: flex;
   flex-direction: row;
   align-items: center;
-  padding: 0 2ex;
-  border: 3px solid transparent;
+  border:2px solid transparent;
+  box-sizing:content-box
 }
-
-/* .slider.macro {
-  flex-wrap: wrap
-} */
 
 .track {
   display: flex;
@@ -201,27 +174,16 @@ input::-webkit-inner-spin-button {
   position: relative;
 }
 
-
-
 .lock {
   max-width: 20px;
   aspect-ratio: 1 / 1;
 }
 
-/* .stop-scrolling {
-  height: 100%;
-  overflow: hidden;
-} */
-
 body {
   overflow: hidden;
   user-select: none;
-
 }
 
-.scrollOn {
-  overflow: hidden
-}
 
 .param-name {
   width: 10%;
@@ -233,14 +195,21 @@ body {
 
 canvas {
   position: absolute;
+  aspect-ratio: 16/10;
+  /* height: 100%; */
+  width: 100%;
   top: 0;
-  left: 0
+  float: left;
+  background-color: white !important;
+  border: 4px solid rgba(0,0,0,0.7);
+  box-sizing: border-box;
 }
 
 .bound {
   width: 10%;
   overflow: scroll;
   flex: 1 0 auto;
+  color: white;
 }
 
 .c0 {
@@ -252,7 +221,7 @@ canvas {
 }
 
 .infobox {
-  padding: 0 1ex 0 1ex;
+  padding: 0 1rem 0 1rem;
   width: auto;
   background-color: white;
   box-shadow: 5px 5px 0px 1px rgba(0, 0, 140, .4);
@@ -261,7 +230,8 @@ canvas {
 .instrument {
   z-index: 10;
   position: fixed;
-  background-color: white;
+  color: black;
+  background: white;
 }
 
 .equipped {
@@ -276,9 +246,7 @@ canvas {
   filter: brightness(120%) hue-rotate(60deg);
 }
 
-/* .inactive {
-  display: none;
-} */
+
 
 .middle {
   background-color: rgba(255, 255, 255, 0.2);
@@ -290,7 +258,7 @@ canvas {
 .erasable.willErase:hover {
   background-color: rgba(255, 0, 0, 0.2);
   filter: brightness(150%) saturate(70%);
-  border: 3px solid red;
+  border-color:red;
   box-sizing: content-box;
 }
 
@@ -301,39 +269,37 @@ canvas {
   box-sizing: border-box;
 }
 .range {
-  background-color: rgb(54, 131, 255);
+  background: lightskyblue;
+  color:lightskyblue;
   height:100%
 }
 
 .thumb {
   width: 4px;
   height:15px;
-  background-color: white;
+  background: white;
+  color: black;
 }
 
-.thumb.willDisplace:focus,
-.range.willDisplace:focus{
-  position: absolute;
-  height: 100%;
-  outline: 2px solid red;
-  box-sizing: border-box;
+.thumb.willDisplace:active,
+.range.willDisplace:active{
+  outline: 2px solid currentColor;
+  box-shadow: 0px 0px 10px currentColor
 }
 .thumb.willSet:hover {
   filter: brightness(20%);
   border:2px solid white;
-  background-color: transparent;
-  
+  background: transparent;
 }
-
-.thumb.willFix:hover{
-  background: repeating-linear-gradient(45deg, white, white 1px, rgba(0,0,0,0), rgba(0,0,0,0) 2px,)
+.thumb.willDisplace:hover{
+  outline: 2px solid currentColor;
 }
 
 .range.willSet:hover {
-  background-color: rgba(0, 0, 255, 0.2);
+  background: rgba(0, 0, 255, 0.2);
   filter: brightness(150%) saturate(70%);
 }
-.range.willFix:hover{
+.foo, .willFix:hover{
   background: repeating-linear-gradient(45deg, transparent, transparent 4px, rgb(54, 131, 255), rgb(54, 131, 255) 6px)
 }
 .instruments {
@@ -341,20 +307,20 @@ canvas {
   flex-direction: row;
   position: fixed;
   height: 100vh;
-  /* padding-top:calc((100vh - 50px)/2);
-  padding-bottom:calc((100vh - 50px)/2) */
-  column-gap: 10px;
+  gap: 1rem 1rem;
 }
 
-.hidden {
+.instruments>*{
+  background: white;
+
+}
+.hidden, .inactive {
   display: none;
 }
 
 .instruments>div {
   display: flex;
-  background-color: rgba(0, 0, 0, 0.7);
-  /* backdrop-filter: blur(3px) grayscale(60%); */
-  color: white;
+  /* color: white; */
   padding: 0.5em 0.5em;
   border-top: calc(50vh - 25px) solid transparent;
   border-bottom: calc(50vh - 25px) solid transparent;
@@ -362,16 +328,6 @@ canvas {
   box-sizing: content-box;
   background-clip: padding-box;
   align-items: center;
-}
-
-.instruments>button {
-  background-color: aqua;
-  border-top: calc(50vh - 25px) solid transparent;
-  border-bottom: calc(50vh - 25px) solid transparent;
-  height: 50px;
-  box-sizing: content-box;
-  background-clip: padding-box;
-
 }
 
 .instruments>div:hover {
@@ -382,10 +338,10 @@ canvas {
 
 .grid{
   display: grid;
-  grid-template-columns: min-content min-content 1fr ;
-  gap: 0px 1em;
+  grid-template-columns: 0.3fr min-content 1fr ;
+  gap: 1rem 1rem;
   grid-auto-flow: row;
   grid-template-areas:
   "c a b";
-  margin:1em;
+  margin:1rem;
 }
