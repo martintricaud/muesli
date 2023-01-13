@@ -5,6 +5,7 @@
     import { writable } from 'svelte/store';
     export let ev, name, equipped;
 
+    let fCustom = x=>(x-1)*Math.pow(Math.log(x/15+1),4)+1
     let vw, vh;
     let clock = writable(0);
     let deltaX = writable(0);
@@ -26,11 +27,13 @@
 
     $: trackX = R.clamp(attack.x - 200, attack.x + 200, ev.x);
     $: thumbY = R.clamp(attack.y - 400, attack.y + 400, ev.y) - 10;
-    $: $deltaX = U.lerp(0, 400, 1, 100, Math.abs(thumbY - attack.y));
+    //linerarly interpolate the mouse vertical offset from a defined range to 1 100 (this is arbitraty)
+    // $: $deltaX = U.lerp(0, 400, 1, 100, Math.abs(thumbY - attack.y));
+    $: $deltaX = Math.abs(thumbY - attack.y);
     $: newEv =
         $clock != 0
-            ? R.modify('movementX', (x) => (Math.sign($clock) * 10) / 10, ev)
-            : R.modify('movementX', (x) => x / $deltaX, ev);
+            ? R.modify('movementX', (x) => (Math.sign($clock) * 10) / fCustom($deltaX), ev)
+            : R.modify('movementX', (x) => x / fCustom($deltaX), ev);
     $: rect = newEv?.atk?.target?.getBoundingClientRect() ?? {
         x: attack.x+1,
         y: attack.y,
@@ -71,14 +74,6 @@
         style="top:{Math.min(rect.y, thumbY)}px; left:{rect.x}px; height:{
         Math.abs(thumbY - rect.y) + rect.height / 2}px; width:{rect.width}px"
         bind:clientWidth={rect.width}
-    />
-
-    <div
-        class="ruler"
-        style="left:{Math.min(trackX, rect.x - 2)}px; top:{Math.min(
-            rect.y,
-            thumbY
-        )}, width:{Math.abs(trackX - rect.x + 2)}px"
     />
 </div>
 

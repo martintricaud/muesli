@@ -3,10 +3,6 @@
   background-color: rgba(0, 0, 0, 0.7)
 }
 
-.grid>*>.instrument{
-  background-color: white
-}
-
 button:focus-visible {
   outline: none !important;
 }
@@ -26,8 +22,8 @@ ul{
   font-size: 1.2em;
   font-weight: 500;
   line-height: 24px;
-  color: black;
-  background-color: #eee;
+  /* color: black;
+  background-color: #eee; */
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -40,6 +36,7 @@ ul{
 *{
   font-family: monospace;
   font-size: 1rem;
+  gap: 1rem 1rem
 }
 
 a {
@@ -106,11 +103,10 @@ input::-webkit-inner-spin-button {
   grid-area:c;
   display: flex;
   flex-direction: column;
-  z-index: 1000;
   overflow-x: hidden;
   overflow-y: auto!important;
-  gap: 1rem 1rem;
   height: 100vh;
+  min-width: 160px;
 }
 
 .presets>* {
@@ -201,7 +197,7 @@ canvas {
   top: 0;
   float: left;
   background-color: white !important;
-  border: 4px solid rgba(0,0,0,0.7);
+  /* border: 4px solid rgba(0,0,0,0.7); */
   box-sizing: border-box;
 }
 
@@ -245,8 +241,6 @@ canvas {
 .preview {
   filter: brightness(120%) hue-rotate(60deg);
 }
-
-
 
 .middle {
   background-color: rgba(255, 255, 255, 0.2);
@@ -307,7 +301,7 @@ canvas {
   flex-direction: row;
   position: fixed;
   height: 100vh;
-  gap: 1rem 1rem;
+
 }
 
 .instruments>*{
@@ -338,9 +332,8 @@ canvas {
 
 .grid{
   display: grid;
-  grid-template-columns: 0.3fr min-content 1fr ;
-  gap: 1rem 1rem;
   grid-auto-flow: row;
+  grid-template-columns: auto auto 1fr;
   grid-template-areas:
   "c a b";
   margin:1rem;

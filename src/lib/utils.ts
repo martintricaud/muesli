@@ -4,7 +4,6 @@ import * as R from 'ramda'
 type num = number
 type num2 = [num,num]
 type str = string
-type E<T> = (x: T) => T //endomorphism type
 type R<T> = Record<str, T> //record with fields of type t
 
 export const [fMAX_H, fMAX_A] = [(b,dim) =>W.bigint_dif(W.max_hilbert(b, dim),"1"), b=>Math.pow(2, b) - 1];
@@ -21,7 +20,7 @@ export const scale = (a, A, b, B,x) =>
 
 export const reorder = R.sort((a:any, b) => a - b)
 export const zoom = p => ([m, M]) => [m + Math.min(0.5, p / 2) * (M - m), M - Math.min(0.5, p / 2) * (M - m)]
-export const lerp = (a, A, b, B,x) => (x - a) * (B - b) / (A - a) + b
+export const lerp = (a, A, b, B,x, f=R.identity) => (f(x) - a) * (B - b) / (A - a) + b
 export const scale2bigint = (a, A, b, B,x) => W.bigint_prod((x - a) / (A - a), W.bigint_dif(B, b), Math.pow(10, 15));
 export const lerp2bigint = (A: num2, B: num2, x) => W.bigint_sum(B[0], scale2bigint(...A,...B,x))
 //! bad code coverage
