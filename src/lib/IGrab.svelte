@@ -5,35 +5,36 @@
     import { writable } from 'svelte/store';
     export let ev, name, equipped;
 
-    let fCustom = x=>(x-1)*Math.pow(Math.log(x/15+1),4)+1
-    let vw, vh;
-    let clock = writable(0);
-    let deltaX = writable(0);
+
+    //dispatcher that will make the instrument "observable"
+    const dispatch = createEventDispatcher();
+
+    let deltaY = writable(0);
 
     let intervalId = null;
+
+    //clock value to be updated by timed counters
+    let clock = writable(0);
+    //starts a timed counter that updates an external clock value
     function startEdgeScroll(step) {
         intervalId = setInterval(() => {
             clock.update((x) => x + step);
         }, 50);
     }
 
+    //stops and external clock value
     function stopEdgeScroll(ev) {
         clock.set(0);
         clearInterval(intervalId);
     }
 
-    const dispatch = createEventDispatcher();
     $: [attack, target] = [ev.atk ?? ev, attack?.target];
-
     $: trackX = R.clamp(attack.x - 200, attack.x + 200, ev.x);
     $: thumbY = R.clamp(attack.y - 400, attack.y + 400, ev.y) - 10;
-    //linerarly interpolate the mouse vertical offset from a defined range to 1 100 (this is arbitraty)
-    // $: $deltaX = U.lerp(0, 400, 1, 100, Math.abs(thumbY - attack.y));
-    $: $deltaX = Math.abs(thumbY - attack.y);
-    $: newEv =
-        $clock != 0
-            ? R.modify('movementX', (x) => (Math.sign($clock) * 10) / fCustom($deltaX), ev)
-            : R.modify('movementX', (x) => x / fCustom($deltaX), ev);
+    $: $deltaY = Math.abs(thumbY - attack.y);
+    $: newEv = $clock != 0
+            ? R.assoc('movementXModifier', (f)=>(x) => Math.sign($clock) / Math.pow(10,f(Math.floor($deltaY/50))), ev)
+            : R.assoc('movementXModifier', (f)=>(x) => x/Math.pow(10,f(Math.floor($deltaY/50))), ev);
     $: rect = newEv?.atk?.target?.getBoundingClientRect() ?? {
         x: attack.x+1,
         y: attack.y,
@@ -43,7 +44,7 @@
     $: dispatch('effect', newEv);
 </script>
 
-<svelte:window bind:innerWidth={vw} bind:innerHeight={vh} />
+
 <div class="instrument">
     <div
         class="machine minus"
@@ -104,11 +105,6 @@
     .machine:hover {
         background-color: lightgray;
     }
-
-    /* .minus {
-        left: -10px;
-        top: -10px;
-    } */
 
     .minus::after {
         content: '';

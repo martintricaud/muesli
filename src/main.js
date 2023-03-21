@@ -13,8 +13,6 @@ import init, {
 import './app.css'
 import App from './App.svelte'
 
-
-
 //create an objet that stores the declaration of js bindings for exported wasm functions
 export let wasm_functions = {
   forward: undefined,
@@ -45,7 +43,6 @@ async function loadApp(){
     target: document.getElementById('app')
   })
 }
-
 
 loadApp();
 

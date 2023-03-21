@@ -40,6 +40,14 @@
   - [ ] 23.12.2022 focus is a derivedStore obtained by filtering the store
 - [ ] 25.12.2022 Feedforward
   - [ ] check compare type of equipped instrument's effect and type of element at target path
+- [ ] 01.03.2023
+  - [ ] if the target is "movable", click sets O to be equal to target's display center, otherwise 0 = its current value. ||OC|| is preserved, and C is made static
+  - [ ] if the target is "movable", shift sets O to be equal to target's display center, otherwise 0 = its current value, while preserving the ||OC||/||OA|| ratio
+
+
+
+
+
 
 
 
