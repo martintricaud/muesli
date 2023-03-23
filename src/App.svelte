@@ -8,13 +8,13 @@
   import * as U from './lib/utils';
   import * as S from './lib/utils-streams';
   import * as R from 'ramda';
-  import HydraViewer from './lib/HydraViewer.svelte';
-  import IGrab from './lib/IGrab.svelte';
-  import ICursor from './lib/ICursor.svelte';
-  import ILever from './lib/ILever.svelte';
-  import ISet from './lib/ISet.svelte';
-  import IFix from './lib/IFix.svelte';
-  import IEraser from './lib/IEraser.svelte';
+  import HydraViewer from './components/HydraViewer.svelte';
+  import IGrab from './components/IGrab.svelte';
+  import ICursor from './components/ICursor.svelte';
+  import ILever from './components/ILever.svelte';
+  import ISet from './components/ISet.svelte';
+  import IFix from './components/IFix.svelte';
+  import IEraser from './components/IEraser.svelte';
   import { EventStore } from './lib/EventStore';
   // import { presets } from './lib/stores.ts';
 
@@ -36,27 +36,28 @@
     macro_w,
     track_w,
     range_w,
-    thumb_w = 5,
-    trackOffset;
-  let hidden, noscroll, mode = true;
-
+    TRACKOFFSET,
+    hidden,
+    noscroll,
+    mode = true,
+    thumb_w = 5;
   let instruments = {
-    fix: {
-      name: 'fix',
-      equipped: false,
-      component: IFix,
-      ev: U.InitEvent,
-      ff: 'willFix',
-      effect: fix_effect,
-    },
-    eraser: {
-      name: 'erase',
-      equipped: false,
-      component: IEraser,
-      ev: U.InitEvent,
-      ff: 'willErase',
-      effect: erase_effect,
-    },
+    // fix: {
+    //   name: 'fix',
+    //   equipped: false,
+    //   component: IFix,
+    //   ev: U.InitEvent,
+    //   ff: 'willFix',
+    //   effect: fix_effect,
+    // },
+    // eraser: {
+    //   name: 'erase',
+    //   equipped: false,
+    //   component: IEraser,
+    //   ev: U.InitEvent,
+    //   ff: 'willErase',
+    //   effect: erase_effect,
+    // },
     lever: {
       name: 'lever',
       equipped: false,
@@ -68,9 +69,8 @@
       name: 'none',
       equipped: true,
       component: ICursor,
-      ev: U.InitEvent,
       ff: 'willNone',
-      
+      effect: cursor_effect,
     },
   };
 
@@ -85,7 +85,9 @@
       name: 'preset0',
       ranges: preset1,
       h_global: W.bigint_prod(0.1, U.fMAX_H(32, 19), 100),
+      //h_global: W.bigint_prod(0.1, U.HilbertMax(32, 19), 100),
       h_local: W.bigint_prod(0.5, U.fMAX_H(32, 19), 100),
+      //h_local: W.bigint_prod(0.1, U.HilbertMax(32, 19), 100),
       z: 1,
     },
   ]);
@@ -105,6 +107,10 @@
     // console.log(ev.detail);
   }
 
+  function cursor_effect(ev) {
+    console.log($EventStore);
+  }
+
   function fix_effect(ev) {
     let e = ev?.detail;
     const path = U.stringToPath(e?.target?.dataset?.path ?? '');
@@ -118,24 +124,30 @@
   function lever_effect(ev) {
     let [key, field] = U.stringToPath(ev.detail.targetPath);
     if (ev.detail.targetStore == 0 || ev.detail.targetStore == 1) {
-      let val = U.scale(
-        trackOffset,
-        trackOffset + track_w,
+      let val = U.scale2bigint(
+        TRACKOFFSET,
+        TRACKOFFSET + track_w,
         '0',
         U.fMAX_H($Bits, $Unlocked.length),
         ev.detail.cursorValue.x
       );
+      //console.log(val)
       muesli?.[ev.detail.targetStore]?.set(val);
     }
     if (ev.detail.targetStore == 2) {
+      console.log(TRACKOFFSET)
       let val = U.scale(
-        trackOffset,
-        trackOffset + track_w,
+        TRACKOFFSET,
+        TRACKOFFSET + track_w,
         $Params[key].c0,
         $Params[key].c1,
         ev.detail.cursorValue.x
       );
-      $Params[key].locked ? Params.update(R.identity) : Params.set(U.deepObjOf([key,field],val))
+
+      let obj =  $Params[key]
+      let itemModifier = R.assoc(key, R.evolve(U.solve(constraintsPreset,R.objOf(field,x=>val),obj),obj))
+      $Params[key].locked ? Params.update(R.identity) : 
+      Params.update(itemModifier);
     }
   }
 
@@ -174,7 +186,6 @@
   }
 
   function feedback(e) {
-    let target = document.elementsFromPoint(e.x, e.y);
     EventStore.set(e);
     instruments[equipped] = R.assoc('ev', e, instruments[equipped]);
   }
@@ -184,7 +195,7 @@
     S.mousedown_.thru(S.obs(feedback));
     S.drag_.thru(S.obs(feedback));
     S.asr(S.capture($zf, S.shiftdown_), S.mousewheel_, S.shiftup_).thru(S.obs(wheel_effect));
-    trackOffset = document.getElementsByClassName('track')[0].getBoundingClientRect().left
+    TRACKOFFSET = document.getElementsByClassName('track2')[0].getBoundingClientRect().left;
   });
 </script>
 
@@ -202,8 +213,8 @@
   }}
   on:resize={(ev) => {
     //this is ugly but Svelte don't have a convenient way to bind to an element's absolute Offset width
-    let val = document.getElementsByClassName('track')[0].getBoundingClientRect().left;
-    trackOffset = val;
+    let val = document.getElementsByClassName('track2')[0].getBoundingClientRect().left;
+    TRACKOFFSET = val;
   }}
 />
 <main class="grid layout">
@@ -223,35 +234,7 @@
     {/if}
   </div>
   <div class="ui">
-    <ul class="sliders" class:hidden={!mode}  style="background-color:red">
-      <li class="macro">
-        <div class="param-name">Global macro</div>
-        <div />
-        <div class="track" bind:clientWidth={macro_w}>
-          <div
-            class=" unlocked"
-            data-store="0"
-            style="left:10px"
-            bind:clientWidth={thumb_w}
-          />
-        </div>
-        <div />
-      </li>
-      <li class="macro">
-        <div class="param-name">Local macro</div>
-        <div />
-        <div class="track">
-          <div
-            data-store="1"
-            class=" unlocked"
-            style="left:10px"
-            bind:clientWidth={thumb_w}
-          />
-        </div>
-        <div />
-      </li>
-    </ul>
-    <ul class="sliders" class:hidden={mode}>
+    <ul class="sliders">
       <li class="macro">
         <div class="param-name">Global macro</div>
         <div />
@@ -281,46 +264,72 @@
         <div />
       </li>
     </ul>
-    <ul class="sliders" style="overflow:{noscroll ? 'hidden' : 'scroll'}">
+
+    <table class="sliders" style="overflow:{noscroll ? 'hidden' : 'scroll'}">
+      <colgroup>
+        <col class="param-name" />
+        <col class="bound c0" />
+        <col style="min-width:200px" />
+        <col class="bound c1" />
+      </colgroup>
+      <tr>
+        <th>Name</th>
+        <th>Min</th>
+        <th />
+        <th>Max</th>
+      </tr>
       <!-- The list of individual sliders is generated by iterating over the store containing sliders data-->
-      {#each Object.entries($Params) as [key, { a, b, c0, c1, z, locked }]}
-        <li class:foo={locked} class="erasable {ff}" data-path={key} data-store="2">
-          <div class:unlocked={!locked} class="param-name {ff}" data-store="2">{key}</div>
-          <div data-store="2" data-path="{key} c0" class:unlocked={!locked} class="bound c0">
+      {#each Object.entries($Params) as [key, { a, b, c0, c1, z, locked, display }]}
+        <tr class:foo={locked} class="erasable {ff}" data-path={key} data-store="2">
+          <td class:unlocked={!locked} class="param-name {ff}" data-store="2">{display}</td>
+          <td data-store="2" data-path="{key} c0" class:unlocked={!locked} class="bound c0">
             {c0}
-          </div>
-          <div class="track" bind:clientWidth={track_w}>
-            <div
-              data-store="2"
-              data-path="{key} b"
-              class:unlocked={!locked}
-              class:foo={locked}
-              class="range"
-              style="width:{(track_w * z) / (c1 - c0)}px; 
+          </td>
+          <td>
+            <div class="track track2" bind:clientWidth={track_w}>
+              <div
+                data-store="2"
+                data-path="{key} b"
+                class:unlocked={!locked}
+                class:foo={locked}
+                class="range"
+                style="width:{(track_w * z) / (c1 - c0)}px; 
                 left:{(track_w * (b - z / 2 - c0)) / (c1 - c0)}px;"
-              bind:clientWidth={range_w}
-            />
-            <div class="middle" style="width:{2}px; left:{U.scale(c0, c1, 0, track_w, b)}px;" />
-            <div
-              data-store="2"
-              data-path="{key} a"
-              class:unlocked={!locked}
-              class="thumb"
-              style="left:{U.scale(c0, c1, 0, track_w, a)}px"
-              bind:clientWidth={thumb_w}
-            />
-          </div>
-          <div data-store="2" data-path="{key} c1" class:unlocked={!locked} class="bound c1">
+                bind:clientWidth={range_w}
+              />
+            
+              <div class="middle" style="width:{2}px; left:{U.scale(c0, c1, 0, track_w, b)}px;" />
+              <div
+                data-store="2"
+                data-path="{key} a"
+                class:unlocked={!locked}
+                class="thumb"
+                style="left:{U.scale(c0, c1, 0, track_w, a)}px"
+                bind:clientWidth={thumb_w}
+              />
+              <div
+                data-store="2"
+                data-path="{key} a"
+                class:unlocked={!locked}
+                style="left:{U.scale(c0, c1, 0, track_w, a)}px;
+                top: -30px;
+                position:relative
+                "
+                bind:clientWidth={thumb_w}
+              >{a}</div>
+            </div>
+          </td>
+          <td data-store="2" data-path="{key} c1" class:unlocked={!locked} class="bound c1">
             {c1}
-          </div>
-        </li>
+          </td>
+        </tr>
       {/each}
-    </ul>
+    </table>
   </div>
   <div class="viewport">
     <HydraViewer synth={synth1} data={data_a} w={1000} h={1000} autoloop={true} />
   </div>
-  <div style="width:100vw; background: none; position:absolute; z-index:1000">
+  <div style="width: 100vw; background: none; position: absolute; z-index: 1000; top:0; left:0">
     <div class:hidden={!hidden} class="palette" style="left:{$palette.x}px; top:{$palette.y}px;">
       {#each Object.entries(instruments) as [name, { equipped }]}
         <div class:equipped on:mouseenter={() => equip_effect(name)}>{name}</div>
@@ -329,11 +338,9 @@
     {#each Object.entries(instruments) as [name, { equipped, component, ev, effect }]}
       <svelte:component this={component} {equipped} {ev} {name} on:effect={effect} />
     {/each}
-    
   </div>
   <div style="position:absolute; bottom:5px; right:5px">
-    <button on:click={()=>mode = !mode}>Switch</button>
-    <button >Export</button>
+    <button on:click={() => (mode = !mode)}>Switch</button>
+    <button>Export</button>
   </div>
-  
 </main>

@@ -1,7 +1,6 @@
 <script>
     import { createEventDispatcher } from 'svelte';
     import * as R from 'ramda';
-    import * as U from './utils';
     import { writable } from 'svelte/store';
     export let ev, name, equipped;
 
@@ -33,8 +32,8 @@
     $: thumbY = R.clamp(attack.y - 400, attack.y + 400, ev.y) - 10;
     $: $deltaY = Math.abs(thumbY - attack.y);
     $: newEv = $clock != 0
-            ? R.assoc('movementXModifier', (f)=>(x) => Math.sign($clock) / Math.pow(10,f(Math.floor($deltaY/50))), ev)
-            : R.assoc('movementXModifier', (f)=>(x) => x/Math.pow(10,f(Math.floor($deltaY/50))), ev);
+            ? R.assoc('movementXModifier', (f)=>(x) => Math.sign($clock) / 10**f(Math.floor($deltaY/50)), ev)
+            : R.assoc('movementXModifier', (f)=>(x) => x/10**f(Math.floor($deltaY/50)), ev);
     $: rect = newEv?.atk?.target?.getBoundingClientRect() ?? {
         x: attack.x+1,
         y: attack.y,

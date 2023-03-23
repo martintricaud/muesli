@@ -97,14 +97,6 @@ export const preset0: Array<[string, Record<string, number | boolean>]> = [
 ];
 
 
-// export const macros = [["h_global", {
-//     c0: '0',
-//     c1: U.fMAX_H(32, 19)
-// }], ['h_local', {
-//     c0: '0',
-//     c1: U.fMAX_H(32, 19)
-// }]]
-
 export const synth2 = a => x =>
     x.osc(Math.log(a.os1f), 1 / Math.max(a.os1f, a.oscModRf, a.oskf), a.os1o)
         .color(Math.log(a.co1r), Math.log(a.co1g), Math.log(a.co1b))
@@ -148,80 +140,92 @@ export const synth2 = a => x =>
 // .out(x.o0)
 
 
-export const preset1: Array<[string, Record<string, number | boolean>]> = [
-    ["noiseScale", { c0: 0, c1: 1, locked:false }], //freq, float, no right bound but above 100 is a lot
-    ["noiseScale2", { c0: 0, c1: 1, locked:false }], //freq, float, no right bound but above 100 is a lot
-    ["noiseOffset2", { c0: 0, c1: 10, locked:false }], //freq, float, no right bound but above 100 is a lot
-    ["modulationAmount2", { c0: 0, c1: 5, locked:false }], //offset
-    ["blendAmount", { c0: 0, c1: 10, locked:false }], //red, int
-    ["oscillator1Frequency", { c0: 0, c1: 50, locked:false }], //red, int
-    ["feedbackScale", { c0: 0.1, c1: 10, locked:false }], //red, int
-    ["hueModulationAmount", { c0: 0, c1: 10, locked:false }], //offset
-    ["noiseThreshold", { c0: 0, c1: 1, locked:false }], //offset
-    ["noiseThresholdTolerance", { c0: 0, c1: 1, locked:false }], //offset
-    ["shapeSize", { c0: 0.1, c1: 2, locked:false }], //offset
-    ["shapeSize2", { c0: 0.1, c1: 2, locked:false }], //offset
-    ["oscillator2Frequency", { c0: 0, c1: 100, locked:false }], //offset
-    ["oscillator2Offset", { c0: 0, c1: 5, locked:false }], //offset
-    ["oscillator1Offset", { c0: 0, c1: 5, locked:false }], //offset
-    ["rotate", { c0: 0, c1: 1, locked:false }], //offset
-    ["shapeScale", { c0: 0.1, c1: 10, locked:false }], //offset
-    ["voronoi", { c0: 1, c1: 20, locked:false }], //offset
-    ["repeatX", { c0: 1, c1: 20, locked:false }], //offset
-    ["repeatY", { c0: 1, c1: 20, locked:false }], //offset
-    ["shiftRed", { c0: 0, c1: 1, locked:false }], //offset
-    ["shiftBlue", { c0: 0, c1: 1, locked:false }], //offset
-    ["shiftGreen", { c0: 0, c1: 1, locked:false }], //offset
-    ["saturationAmount", { c0: 0, c1: 1, locked:false }], //offset
-    ["brightnessAmount", { c0: 0, c1: 1, locked:false }], //offset
-    ["shapeSmoothing", { c0: 0, c1: 1, locked:false }], //offset
-];
+// export const preset1: Array<[string, Record<string, number | boolean>]> = [
+//     ["noiseScale", { c0: 0, c1: 1, locked:false }], //freq, float, no right bound but above 100 is a lot
+//     ["noiseScale2", { c0: 0, c1: 1, locked:false }], //freq, float, no right bound but above 100 is a lot
+//     ["noiseOffset2", { c0: 0, c1: 10, locked:false }], //freq, float, no right bound but above 100 is a lot
+//     ["modulationAmount2", { c0: 0, c1: 5, locked:false }], //offset
+//     ["blendAmount", { c0: 0, c1: 10, locked:false }], //red, int
+//     ["oscillator1Frequency", { c0: 0, c1: 50, locked:false }], //red, int
+//     ["feedbackScale", { c0: 0.1, c1: 10, locked:false }], //red, int
+//     ["hueModulationAmount", { c0: 0, c1: 10, locked:false }], //offset
+//     ["noiseThreshold", { c0: 0, c1: 1, locked:false }], //offset
+//     ["noiseThresholdTolerance", { c0: 0, c1: 1, locked:false }], //offset
+//     ["shapeSize", { c0: 0.1, c1: 2, locked:false }], //offset
+//     ["shapeSize2", { c0: 0.1, c1: 2, locked:false }], //offset
+//     ["oscillator2Frequency", { c0: 0, c1: 100, locked:false }], //offset
+//     ["oscillator2Offset", { c0: 0, c1: 5, locked:false }], //offset
+//     ["oscillator1Offset", { c0: 0, c1: 5, locked:false }], //offset
+//     ["rotate", { c0: 0, c1: 1, locked:false }], //offset
+//     ["shapeScale", { c0: 0.1, c1: 10, locked:false }], //offset
+//     ["voronoi", { c0: 1, c1: 20, locked:false }], //offset
+//     ["repeatX", { c0: 1, c1: 20, locked:false }], //offset
+//     ["repeatY", { c0: 1, c1: 20, locked:false }], //offset
+//     ["shiftRed", { c0: 0, c1: 1, locked:false }], //offset
+//     ["shiftBlue", { c0: 0, c1: 1, locked:false }], //offset
+//     ["shiftGreen", { c0: 0, c1: 1, locked:false }], //offset
+//     ["saturationAmount", { c0: 0, c1: 1, locked:false }], //offset
+//     ["brightnessAmount", { c0: 0, c1: 1, locked:false }], //offset
+//     ["shapeSmoothing", { c0: 0, c1: 1, locked:false }], //offset
+// ];
 
+export const preset1 = [
+["frequency", { c0: 0.0001, c1: 100, locked:false, display:"frequency" }], 
+["offset", { c0: 0.0001, c1: 1, locked:false, display:"offset" }], 
+["noiseScale", { c0: 1, c1: 10, locked:false, display:"noise scale" }],
+// ["noiseOffset", { c0: 0.0001, c1: 1, locked:false }],
+["noiseScale1", { c0: 1, c1: 10, locked:false, display:"noise scale 1" }],
+// ["noiseOffset1", { c0: 0.0001, c1: 1, locked:false }],
+["modulationAmount1", { c0: 0.0001, c1: 1, locked:false, display:"modulation amount" }],
+["modulationAmount2", { c0: 0.0001, c1: 1, locked:false, display:"modulation amount 2" }]]
 
-export const synth1 = a => x => x.src(x.o0)
-    .modulateHue(
-        x.src(x.o0).scale(a.feedbackScale),a.hueModulationAmount
-    )
-    .layer(
-        x.osc(a.oscillator1Frequency,0, a.oscillator1Offset+0.5)
-            .mult(x.voronoi(Math.log(a.voronoi),0,a.voronoi),a.modulationAmount2)
-                .mask(
-                    x.shape(4,a.shapeSize, Math.abs(1-a.shapeSmoothing))
-                    .modulateRepeat(x.osc(a.oscillator1Frequency,0,a.oscillator2Offset+1), 3.0, 3.0, 0.5, 0.5)
-                )
-    )
-    .modulate(x.noise(a.noiseScale).thresh(a.noiseThreshold,a.noiseThresholdTolerance),a.modulationAmount2)
-    .shift(a.shiftRed,a.shiftGreen,a.shiftBlue)
-    .add(x
-        .src(x.o0)
-        .modulate(
-            x.osc(a.oscillator2Frequency+10,0,a.oscillator2Offset)
-            .modulate(
-                x.noise(a.noiseScale2,a.noiseOffset2).thresh(a.noiseThreshold,a.noiseThresholdTolerance)
-                .sub(
-                    x.gradient().saturate(a.saturationAmount)
-                )
-                ,
-            1)
-            ,
-       a.modulationAmount2)
-        .layer(
-            x.osc(
-                Math.sqrt(a.oscillator1Frequency),0,a.oscillator2Offset
-            ).rotate(a.rotate)
-            // .posterize(0.1,0.6 )
-            .mask(
-                x.shape(3,a.shapeSize+1,a.shapeSmoothing)
-                .repeat(a.repeatX, a.repeatY)
-                .scale(a.shapeScale).rotate(a.rotate)
-            )
-        )
-        // .posterize(1,0.6 )
-        ,
-        a.blendAmount)
-        .diff(
-            x.gradient()
-            .brightness(a.brightnessAmount)
-            .saturate(a.saturationAmount)
-            .shift(0,a.shiftGreen/2,a.shiftBlue/10),0)
-.out(x.o0)
+//export const synth1 = a=>x=>x.osc(a.frequency, 1/a.frequency, a.offset).modulate(x.src(x.o0).modulate(x.noise(a.noiseScale, 1/a.noiseScale),a.modulationAmount1),a.modulationAmount2).posterize().out(x.o0)
+export const synth1 = a=>x=>x.noise(a.noiseScale1, 1/a.noiseScale1).modulate(x.src(x.o0).modulate(x.osc(a.frequency, 1/a.frequency, a.offset),a.modulationAmount1),a.modulationAmount2).posterize().out(x.o0)
+
+// export const synth1 = a => x => x.src(x.o0)
+//     .modulateHue(
+//         x.src(x.o0).scale(a.feedbackScale),a.hueModulationAmount
+//     )
+//     .layer(
+//         x.osc(a.oscillator1Frequency,0, a.oscillator1Offset+0.5)
+//             .mult(x.voronoi(Math.log(a.voronoi),0,a.voronoi),a.modulationAmount2)
+//                 .mask(
+//                     x.shape(4,a.shapeSize, Math.abs(1-a.shapeSmoothing))
+//                     .modulateRepeat(x.osc(a.oscillator1Frequency,0,a.oscillator2Offset+1), 3.0, 3.0, 0.5, 0.5)
+//                 )
+//     )
+//     .modulate(x.noise(a.noiseScale).thresh(a.noiseThreshold,a.noiseThresholdTolerance),a.modulationAmount2)
+//     .shift(a.shiftRed,a.shiftGreen,a.shiftBlue)
+//     .add(x
+//         .src(x.o0)
+//         .modulate(
+//             x.osc(a.oscillator2Frequency+10,0,a.oscillator2Offset)
+//             .modulate(
+//                 x.noise(a.noiseScale2,a.noiseOffset2).thresh(a.noiseThreshold,a.noiseThresholdTolerance)
+//                 .sub(
+//                     x.gradient().saturate(a.saturationAmount)
+//                 )
+//                 ,
+//             1)
+//             ,
+//        a.modulationAmount2)
+//         .layer(
+//             x.osc(
+//                 Math.sqrt(a.oscillator1Frequency),0,a.oscillator2Offset
+//             ).rotate(a.rotate)
+//             // .posterize(0.1,0.6 )
+//             .mask(
+//                 x.shape(3,a.shapeSize+1,a.shapeSmoothing)
+//                 .repeat(a.repeatX, a.repeatY)
+//                 .scale(a.shapeScale).rotate(a.rotate)
+//             )
+//         )
+//         // .posterize(1,0.6 )
+//         ,
+//         a.blendAmount)
+//         .diff(
+//             x.gradient()
+//             .brightness(a.brightnessAmount)
+//             .saturate(a.saturationAmount)
+//             .shift(0,a.shiftGreen/2,a.shiftBlue/10),0)
+// .out(x.o0)

@@ -15,7 +15,7 @@
 - [x] ~~stream handlers for edge scrolling~~
 - [ ] polymorphic delete
 - [x] ~~clicking an inactive instrument makes it active and all others inactive, clicking an active instrument makes it inactive~~
-- [ ] hilbert arrays store their locked values (shape is ```{v:foo, locked:bar}``` )
+- [x] hilbert arrays store their locked values (shape is ```{v:foo, locked:bar}``` )
 - [x] ~~can hilbert adjunction be reactively parametrized?~~
 - [x] ~~define a store for ranges~~
   - [x] ~~scaleAround~~
@@ -43,7 +43,8 @@
 - [ ] 01.03.2023
   - [ ] if the target is "movable", click sets O to be equal to target's display center, otherwise 0 = its current value. ||OC|| is preserved, and C is made static
   - [ ] if the target is "movable", shift sets O to be equal to target's display center, otherwise 0 = its current value, while preserving the ||OC||/||OA|| ratio
-
+- [ ] 22.03.2023 replace implementation of BigInt operations
+  - [ ] rewrite BigIntProd
 
 
 

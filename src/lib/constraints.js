@@ -21,7 +21,7 @@ export const constraintsPreset = [
 		}
 	},
 	{
-		predicate: obj => obj.b >= obj.c0+obj.z/2 && obj.b <=  obj.c1-obj.z/2,
+		predicate: obj => obj.b <= obj.c0+obj.z/2 && obj.b >=  obj.c1-obj.z/2,
 		g: (f,v) => {
 			return {
 				b: x=>R.clamp(f.c0(v.c0)+f.z(v.z)/2, f.c1(v.c1)-f.z(v.z)/2, f.b(x))
@@ -29,10 +29,11 @@ export const constraintsPreset = [
 		}
 	},
 	{
-		predicate: obj => obj.a >= obj.b - obj.z / 2 && obj.a <= obj.b + obj.z / 2, 
+		predicate: obj => obj.a <= obj.b - obj.z / 2 && obj.a >= obj.b + obj.z / 2, 
 		g: (f,v) => {
 			return {
 				a: x=> R.clamp(f.b(v.b) - f.z(v.z) / 2, f.b(v.b) + f.z(v.z) / 2, f.a(x))
+                // a: x=> R.clamp(1, 5, f.a(x))
 			}
 		}
 	}
