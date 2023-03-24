@@ -13,7 +13,7 @@ export const constraintsPreset = [
 		}
 	},
 	{
-		predicate: obj => obj.z <= obj.c1 - obj.c0 && obj.z >= e,
+		predicate: obj => obj.z >= obj.c1 - obj.c0 && obj.z <= e,
 		g: (f,v) => {
 			return {
 				z: x=>R.clamp(e, f.c1(v.c1)-f.c0(v.c0),f.z(x))

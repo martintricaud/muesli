@@ -1,6 +1,6 @@
 <script>
     import {createEventDispatcher} from 'svelte';
-    import { EventStore } from '../lib/EventStore';
+    import { EventStore } from '../lib/UIState';
     export let ev, name, equipped;
     const dispatch = createEventDispatcher();
     $: ()=>dispatch('effect', $EventStore)

@@ -2,7 +2,7 @@
     import { createEventDispatcher } from 'svelte';
     import * as R from 'ramda';
     import { AlignmentStore } from '../lib/LeverStore';
-    import { EventStore } from '../lib/EventStore';
+    import { EventStore } from '../lib/UIState';
     import { onMount } from 'svelte';
     export let ev, name, equipped;
 

@@ -2,13 +2,14 @@
     import {createEventDispatcher} from 'svelte';
     export let ev, name, equipped;
     const dispatch = createEventDispatcher();
-    $: dispatchDetails = ev
+    import { EventStore } from '../lib/UIState';
+    // $: dispatchDetails = ev
 </script>
 
 <svelte:window 
-    on:click={(e) => equipped ? dispatch('effect', dispatchDetails):e}
+    on:click={(e) => equipped ? dispatch('effect', $EventStore):e}
 />
-<div class="infobox instrument" class:inactive={!equipped} style="top:{ev.y+20}px; left:{ev.x+20}px">
+<div class="infobox instrument" class:inactive={!equipped} style="top:{$EventStore.y+20}px; left:{$EventStore.x+20}px">
 {name}
 </div>
 

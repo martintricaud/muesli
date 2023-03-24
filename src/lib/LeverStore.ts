@@ -1,9 +1,6 @@
 import { writable, Writable, get, derived } from "svelte/store";
 import * as R from 'ramda';
-import * as U from './utils';
 import * as vec from './vec'
-import { wasm_functions as W } from '../main.js';
-import { prng_alea } from 'esm-seedrandom';
 
 interface Vec {
     x: number,

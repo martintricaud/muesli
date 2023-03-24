@@ -47,22 +47,22 @@ export function liftedConstraintStore(ranges: Array<[string, P<any>]>, _epsilon:
 		Params.update(U.liftSolve(U.solve(constraintsPreset), U.deepAlways(X)))
 	}
 
-	function updateItem(itemKey, itemModification){
-		//console.log(get(Params)[itemKey][itemField])
-		let target = get(Params)[itemKey]
-		let f = U.solve(constraintsPreset,itemModification,target)
-		let f2 = U.solve(constraintsPreset,{a: x=>x+2},target)
-		let g = R.evolve(f,target)
-		let g2 = R.evolve(f2,target)
-		console.log(g2.a)
+	// function updateItem(itemKey, itemModification){
+	// 	//console.log(get(Params)[itemKey][itemField])
+	// 	let target = get(Params)[itemKey]
+	// 	let f = U.solve(constraintsPreset,itemModification,target)
+	// 	let f2 = U.solve(constraintsPreset,{a: x=>x+2},target)
+	// 	let g = R.evolve(f,target)
+	// 	let g2 = R.evolve(f2,target)
+	// 	console.log(g2.a)
 
-		// Params.update(R.modify(itemKey,item => R.evolve(
-		// 	U.solve(constraintsPreset,itemModification,item))
-		// ))
-	}
+	// 	// Params.update(R.modify(itemKey,item => R.evolve(
+	// 	// 	U.solve(constraintsPreset,itemModification,item))
+	// 	// ))
+	// }
 
 	return [
-		{ subscribe: Params.subscribe, set: set_S, update: Params.update, updateItem:updateItem},
+		{ subscribe: Params.subscribe, set: set_S, update: Params.update},
 		{ subscribe: Keys.subscribe, set: Keys.set, update: Keys.update }
 	]
 }
@@ -134,7 +134,7 @@ export function MuesliStore(data) {
 	return [
 		{ subscribe: H_global.subscribe, set: setH_global, update: updateH_global },
 		{ subscribe: H_local.subscribe, set: setH_local, update: updateH_local },
-		{ subscribe: Params.subscribe, set: Params.set, update: updateParams, updateItem: Params.updateItem },
+		{ subscribe: Params.subscribe, set: Params.set, update: updateParams},
 		Bits,
 		Unlocked
 	]

@@ -120,10 +120,8 @@ export function lerpLens(valField: str, rangeGetter: (obj: R<num>) => num2, othe
   return R.lens(lerpView(valField, rangeGetter, otherRange), lerpSet(valField, rangeGetter, otherRange));
 }
 
-export function stringToPath(s: str | undefined) {
-  let res = R.split(' ', s)
-  let res2: Array<str | num> = R.isEmpty(res) ? [] : R.map((x: any) => isNaN(x) ? x : Number(x), res)
-  return res2
+export function stringToPath(s: string | undefined):Array<string | number> {
+  return R.isEmpty(R.split(' ', s)) ? [] : R.map((x: any) => isNaN(x) ? x : Number(x), R.split(' ', s))
 }
 
 

@@ -100,7 +100,7 @@ input::-webkit-inner-spin-button {
   flex: 2 2 20em
 }
 
-.presets {
+.snapshots {
   /* grid-area: c;
   display: grid; */
   /* flex-direction: column; */
@@ -116,7 +116,7 @@ input::-webkit-inner-spin-button {
     column-gap: 0.5rem;
 }
 
-.presets>* {
+.snapshots>* {
   backdrop-filter: blur(3px) grayscale(60%);
   color: white;
   vertical-align: middle;
@@ -126,25 +126,25 @@ input::-webkit-inner-spin-button {
   overflow: hidden;
 }
 
-.presets>div {
+.snapshots>div {
   aspect-ratio: 1 /1;
 }
 
-.presets>*>span {
+.snapshots>*>span {
   display: block;
   position: absolute;
   float: left;
   background-color: rgba(0, 0, 0, 0.7)
 }
 
-.presets:first-child {
+.snapshots:first-child {
   position: sticky !important;
   top: 0;
   z-index: 100
     /* margin-top:1rem; */
 }
 
-.presets>*:hover {
+.snapshots>*:hover {
   filter: brightness(150%);
   font-weight: bold;
 }
@@ -158,7 +158,6 @@ input::-webkit-inner-spin-button {
   padding: 0;
   margin: 0;
   grid-area: a;
-  /* display: flex; */
   flex-direction: column;
   overflow-y: scroll;
   overflow-x: scroll;
@@ -174,21 +173,28 @@ input::-webkit-inner-spin-button {
   align-items: center;
 }
 
-.sliders>li:nth-child(even) {
+.sliders>*:nth-child(even) {
   background-color: hsla(120, 0%, 30%, 0.9);
   ;
 }
 
-.sliders>li:nth-child(odd) {
+.sliders>*:nth-child(odd) {
   background-color: hsla(120, 0%, 40%, 0.9);
+}
+
+tr:nth-child(even) {
+  background-color: #D6EEEE;
 }
 
 .sliders>tr {
   padding: 0 1rem;
-  /* display: grid; */
   grid-template-columns: minmax(0, 3em) minmax(0, 3em) auto minmax(0, 3em);
   column-gap: 0.2em;
   align-items: center;
+}
+
+.sliders>td {
+  padding: 0 1rem;
 }
 
 .sliders>tr:nth-child(even) {
@@ -206,7 +212,7 @@ table{
 }
 
 td{
-  padding-right: 0.5em
+  padding-left: 0.5em
 }
 .track {
   display: flex;
@@ -223,8 +229,8 @@ td{
 }
 
 .param-name {
-  width: 10%;
-  flex: 1 0 auto;
+  /* width: 10%; */
+  /* flex: 1 0 auto; */
   text-align: left;
   color: #fff;
   font-weight: bold;
@@ -370,14 +376,28 @@ canvas {
 }
 
 .palette>div:hover {
-  /* filter: contrast(200%) brightness(150%); */
   font-weight: bold;
-  
-
   box-shadow: 5px 5px 0px 1px rgba(0, 0, 212, .4);
 }
 
 .hidden,
 .inactive {
   display: none;
+}
+
+.config{
+  display: flex;
+  column-gap: 0.5em;
+  align-content: flex-end;
+  position:absolute; 
+  bottom:5px; 
+  right:5px; 
+}
+
+.slider-row{
+    display: grid; 
+    grid-auto-rows: 1fr; 
+    grid-template-columns: minmax(4em, 20%) 1fr max-content 1fr; 
+    gap: 0px 15px; 
+    grid-template-areas: a b c d;
 }
