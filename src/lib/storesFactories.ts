@@ -10,7 +10,7 @@ import { prng_alea } from 'esm-seedrandom';
 type P<T> = Record<string, T> //record with fields of type t
 let u32a = Uint32Array;
 interface PresetV{
-    h_local: string, h_global:string, ranges: Array<[string, Record<string, number|boolean>]>, z:number
+    h_local: string, h_global:string, ranges: Array<[string, Record<string, number|boolean|string>]>, z:number
 }
 interface Preset extends PresetV{
     name:string
@@ -43,33 +43,22 @@ export function liftedConstraintStore(ranges: Array<[string, P<any>]>, _epsilon:
 	const Params = writable(U.liftSolve(U.solve(constraintsPreset), F0,X0)) //store of records
 	const Keys: Writable<string[]> = writable(R.map(x => x[0], ranges))
 
+	function evolve(transformer){
+		Params.update(U.liftSolve(U.solve(constraintsPreset),transformer))
+	}
 	function set_S(X: P<P<number|boolean>>) {
-		Params.update(U.liftSolve(U.solve(constraintsPreset), U.deepAlways(X)))
+		evolve(U.deepAlways(X))
 	}
 
-	// function updateItem(itemKey, itemModification){
-	// 	//console.log(get(Params)[itemKey][itemField])
-	// 	let target = get(Params)[itemKey]
-	// 	let f = U.solve(constraintsPreset,itemModification,target)
-	// 	let f2 = U.solve(constraintsPreset,{a: x=>x+2},target)
-	// 	let g = R.evolve(f,target)
-	// 	let g2 = R.evolve(f2,target)
-	// 	console.log(g2.a)
-
-	// 	// Params.update(R.modify(itemKey,item => R.evolve(
-	// 	// 	U.solve(constraintsPreset,itemModification,item))
-	// 	// ))
-	// }
-
 	return [
-		{ subscribe: Params.subscribe, set: set_S, update: Params.update},
+		{ subscribe: Params.subscribe, set: set_S, update: Params.update, evolve:evolve},
 		{ subscribe: Keys.subscribe, set: Keys.set, update: Keys.update }
 	]
 }
 
 export function MuesliStore(data) {
 	// B = bits per dimensions, P = parameters, K = Keys, HF = Hilbert Forward, HR = Hilbert Reverse
-	const [Params, Keys] = liftedConstraintStore(data.ranges)
+	const [Params, Keys] = liftedConstraintStore(data.inputSpace)
 	const Bits: Writable<number> = writable(32)
 	const Unlocked = derived([Keys,Params],([$K, $P])=>R.reject((x:string)=>R.prop('locked',$P[x]),$K))
 	const MaxH = derived([Unlocked,Bits],([$U, $B])=>BigInt(2**($U.length*$B)-1).toString())
@@ -118,7 +107,12 @@ export function MuesliStore(data) {
 		Params.set(R.mergeWith(R.set(lensB), hx, $Params))
 	}
 
+	function evolveParams(X){
+		updateParams(U.liftSolve(U.solve(constraintsPreset), R.pick($Unlocked,X)))
+	}
+
 	function updateParams(X) {
+		
 		Params.update(X)
 		let [H_global_setters, H_local_setters] = [
 			R.mapObjIndexed(R.view(lensB), $Params),
@@ -134,11 +128,14 @@ export function MuesliStore(data) {
 	return [
 		{ subscribe: H_global.subscribe, set: setH_global, update: updateH_global },
 		{ subscribe: H_local.subscribe, set: setH_local, update: updateH_local },
-		{ subscribe: Params.subscribe, set: Params.set, update: updateParams},
+		{ subscribe: Params.subscribe, set: Params.set, update: updateParams, evolve: evolveParams},
 		Bits,
-		Unlocked
+		Unlocked,
+		derived(Params,R.pluck("a"))
 	]
 }
+
+export const InputValues = store => derived(store, R.pluck("a"))
 
 export function PresetStore(init: Preset[] | []) {
 	const Presets: Writable<Preset[] | []> = writable(init);

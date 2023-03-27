@@ -15,17 +15,17 @@
 </table>
 
 <style>
-.col1{
+/* .col1{
     width: 100px;
 }
 .col2{
     width: 50px
-}
+} */
 
 .col3{
     min-width: 200px;
 }
-.col4{
+/* .col4{
     width: 2em
-}
+} */
 </style>

@@ -65,11 +65,14 @@ input::-webkit-inner-spin-button {
 }
 
 .grid {
+  height: calc(100vh - 2em);
   display: grid;
-  grid-auto-flow: row;
-  grid-template-rows: 15vh calc(85vh - 2em);
+  /* grid-auto-flow: row; */
+  grid-template-rows: 1fr 5fr 94fr;
+  /* grid-template-rows: 1fr 15fr 85fr; */
   grid-template-columns: minmax(400px, auto) minmax(calc(85vh - 2em), auto);
   grid-template-areas:
+        "d d"
         "c c"
         "a b";
   margin: 1rem;
@@ -94,11 +97,25 @@ input::-webkit-inner-spin-button {
 .viewport {
   grid-area: b;
   height: 100%;
-  /* height: calc(100vh - 2em); */
+  border: 2px solid white;
+  outline: 1px solid black;
+  border-radius: 3px;
   overflow: scroll;
   z-index: -1;
-  flex: 2 2 20em
 }
+.viewport>canvas{
+  min-height:1000px;
+}
+/* 
+.viewport::before{
+  content: " ";
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  right: 1px;
+  bottom: 1px;
+  border: 1px solid blue;
+} */
 
 .snapshots {
   /* grid-area: c;
@@ -116,14 +133,22 @@ input::-webkit-inner-spin-button {
     column-gap: 0.5rem;
 }
 
+label>input{
+  display: none
+}
+
 .snapshots>* {
   backdrop-filter: blur(3px) grayscale(60%);
-  color: white;
+  /* color: white; */
   vertical-align: middle;
-  background-color: rgba(0, 0, 0, 0.7);
+  /* background-color: rgba(0, 0, 0, 0.7); */
   /* height: max-content; */
   min-height: 1px;
   overflow: hidden;
+  border: 1px solid black;
+  border-bottom: 3px solid black;
+  border-right: 3px solid black;
+  border-radius: 3px;
 }
 
 .snapshots>div {
@@ -162,29 +187,28 @@ input::-webkit-inner-spin-button {
   overflow-y: scroll;
   overflow-x: scroll;
   margin-bottom: 1rem;
-  border: 2px solid rgba(0, 0, 212, .4);
+  border: 1px solid black;
+  border-radius:3px;
+  background-color: #F0F0F0;
+  /* border: 2px solid rgba(0, 0, 212, .4); */
 }
 
-.sliders>li {
+/* .sliders>li {
   padding: 0 1rem;
   display: grid;
   grid-template-columns: minmax(0, 3em) minmax(0, 3em) auto minmax(0, 3em);
   column-gap: 0.2em;
   align-items: center;
-}
+} */
 
 .sliders>*:nth-child(even) {
-  background-color: hsla(120, 0%, 30%, 0.9);
-  ;
+  background-color: #E3E3E3;
 }
 
 .sliders>*:nth-child(odd) {
-  background-color: hsla(120, 0%, 40%, 0.9);
+  background-color: #F0F0F0;
 }
 
-tr:nth-child(even) {
-  background-color: #D6EEEE;
-}
 
 .sliders>tr {
   padding: 0 1rem;
@@ -197,18 +221,17 @@ tr:nth-child(even) {
   padding: 0 1rem;
 }
 
-.sliders>tr:nth-child(even) {
-  background-color: hsla(120, 0%, 30%, 0.9);
+/* .sliders>tr:nth-child(even) {
+  background-color: #D2D2D2;
   ;
 }
 
 .sliders>tr:nth-child(odd) {
-  background-color: hsla(120, 0%, 40%, 0.9);
-}
+  background-color: #F0F0F0;
+} */
 
 table{
   border-collapse: collapse;
-  color: #fff;
 }
 
 td{
@@ -219,8 +242,9 @@ td{
   align-items: center;
   vertical-align: center;
   height: 4px;
-  background-color: rgba(0, 0, 0, 0.3);
+  background-color: white;
   position: relative;
+  border: 1px solid black;
 }
 
 .lock {
@@ -229,35 +253,32 @@ td{
 }
 
 .param-name {
-  /* width: 10%; */
-  /* flex: 1 0 auto; */
   text-align: left;
-  color: #fff;
-  font-weight: bold;
+  color: black;
 }
 
 canvas {
-  /* position: absolute; */
   aspect-ratio: 1 /1;
-  height: 100%;
   top: 0;
   float: left;
   background-color: white !important;
   box-sizing: border-box;
-  border: 2px solid rgba(0, 0, 140, .4);
 }
 
 .bound {
-  overflow: scroll;
-  color: white;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  color: #808080;
 }
 
 .c0 {
   text-align: right;
+  grid-area: c0;
 }
 
 .c1 {
   text-align: left;
+  grid-area: c1;
 }
 
 
@@ -265,7 +286,7 @@ canvas {
   padding: 0.5rem;
   width: auto;
   background-color: white;
-  border: 2px solid rgba(0, 0, 212, .4);
+  border: 1px solid black;
   box-shadow: 5px 5px 0px 1px rgba(0, 0, 212, .4);
 }
 
@@ -274,13 +295,8 @@ canvas {
   position: fixed;
   color: black;
   background: white;
-  /* border-color:rgba(0, 0, 212, .4);
-  border-style: solid; */
 }
 
-.equipped {
-  filter: contrast(50%) saturate(10%)  brightness(200%);
-}
 
 .locked {
   filter: contrast(50%) saturate(50%) opacity(70%);
@@ -291,8 +307,9 @@ canvas {
 }
 
 .middle {
-  background-color: rgba(255, 255, 255, 0.2);
+  background-color: rgba(255, 255, 255, 0.5);
   position: absolute;
+  width: 2px;
 }
 
 
@@ -305,7 +322,9 @@ canvas {
 
 .range {
   background: rgb(153, 153, 234);
-  color: rgb(153, 153, 234);
+  color: hsl(240, 66%, 76%);
+  border-left: 1px solid  hsl(240, 45%, 60%);
+  border-right: 1px solid  hsl(240, 45%, 60%);
   height: 100%
 }
 
@@ -314,6 +333,7 @@ canvas {
   height: 10px;
   background: white;
   color: black;
+  border: 1px solid black;
   border-radius: 5px;
 }
 
@@ -338,9 +358,9 @@ canvas {
   filter: brightness(150%) saturate(70%);
 }
 
-.foo,
+.fixed,
 .willFix:hover {
-  background: repeating-linear-gradient(45deg, transparent, transparent 4px, lightskyblue, lightskyblue 6px)
+  background: repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(0,0,0,0.3), rgba(0,0,0,0.3) 5px)
 }
 
 
@@ -372,12 +392,20 @@ canvas {
   box-sizing: content-box;
   background-clip: padding-box;
   align-items: center;
-  border: 2px solid rgba(0, 0, 212, .4);
+  border: 1px solid black;
+  border-bottom: 3px solid black;
+  border-right: 3px solid black;
+  border-radius: 3px;
 }
 
 .palette>div:hover {
   font-weight: bold;
   box-shadow: 5px 5px 0px 1px rgba(0, 0, 212, .4);
+}
+
+
+.equipped {
+  filter: contrast(50%) saturate(10%)  brightness(200%);
 }
 
 .hidden,
@@ -386,12 +414,13 @@ canvas {
 }
 
 .config{
+  grid-area: d;
   display: flex;
   column-gap: 0.5em;
   align-content: flex-end;
-  position:absolute; 
-  bottom:5px; 
-  right:5px; 
+  /* position:absolute; 
+  top:5px; 
+  left:5px;  */
 }
 
 .slider-row{
@@ -399,5 +428,20 @@ canvas {
     grid-auto-rows: 1fr; 
     grid-template-columns: minmax(4em, 20%) 1fr max-content 1fr; 
     gap: 0px 15px; 
-    grid-template-areas: a b c d;
+    grid-template-areas: "name c0 val c1";
+}
+
+.slider-grid{
+  padding:0 0.5em;
+  align-items: center;
+  display: grid; 
+  grid-auto-rows: minmax(10, auto);
+  grid-row: auto;
+  grid-template-columns: minmax(12ch, 20%) minmax(3ch, 5ch) minmax(200px, auto)  minmax(3ch, 5ch);
+  grid-template-areas: "name c0 val c1";
+  gap: 0px 0.5em; 
+}
+
+.slider-grid>.param-name{
+  grid-area: name;
 }

@@ -52,10 +52,10 @@
     }}
 />
 
-<!-- <svg class:inactive={!equipped} style="position:absolute; top:0; left:0" width="100vw" height="100vh">
+<svg class:inactive={!equipped} style="position:absolute; top:0; left:0" width="100vw" height="100vh">
     <rect width="100%" height="100%" stroke="red" fill="none" />
     <line x1="{$C.x}px" y1="{$C.y}px" x2="{$A.x}px" y2="{$A.y}px" stroke="black" />
-</svg> -->
+</svg>
 <div
     class:inactive={!equipped}
     class="round red"
@@ -85,14 +85,14 @@
     }
     .red:after {
         content: 'A';
-        border: 1px solid red;
+        border: 1px solid black;
     }
     .green:after {
         content: 'B';
-        border: 1px solid green;
+        border: 1px solid black;
     }
     .blue:after {
         content: 'C';
-        border: 1px solid blue;
+        border: 1px solid black;
     }
 </style>

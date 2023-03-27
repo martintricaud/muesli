@@ -11,11 +11,41 @@ interface Vec {
 }
 
 export let HilbertForward = (p: BigInt, b: number, d: number) => W.forward(p.toString(), b, d)
-export let HilbertInverse = (X: Uint32Array, b: number) => BigInt(W.inverse(X,b))
-export const ratio = (a,b, dec) => Number(a * BigInt(dec) / b) / dec
-export const prod = (a,b, dec) => {}
+export let HilbertInverse = (X: Uint32Array, b: number) => BigInt(W.inverse(X, b))
+export function ratio(a, b, precision):number{
+  return Number(a * BigInt(precision) / b) / precision
+}
 
-export const [fMAX_H, fMAX_A] = [(b, dim) => W.bigint_dif(W.max_hilbert(b, dim), "1"), b => 2**b - 1];
+export function prod(a,b,precision){
+  if(typeof a === typeof b){
+    return a*b
+  }
+  else{
+    let [numberOperand, bigintOperand] = typeof a === 'bigint' ? [b, a] : [a, b];
+    //todo: I need to handle the case where numberOperand*10**precision is larger than MaxNumber
+    return BigInt(Math.round(numberOperand*10**precision))*bigintOperand / BigInt(10**precision)
+  }
+
+  
+
+}
+// export function prod(a: number | bigint, b: number | bigint, precision: number): number | bigint {
+//   if (typeof a === 'number' && typeof b === 'number') {
+//     return a * b; // return product of two numbers
+//   } else if (typeof a === 'bigint' && typeof b === 'bigint') {
+//     return a * b; // return product of two bigints
+//   } else {
+//     const isBigIntA = typeof a === 'bigint';
+//     const isBigIntB = typeof b === 'bigint';
+//     const [numberOperand, bigintOperand] = isBigIntA ? [b, a] : [a, b];
+//     const result = bigintOperand * BigInt(Math.round(numberOperand * 10 ** precision));
+//     const precisionFactor = BigInt(10 ** precision);
+//     return isBigIntA || isBigIntB ? result : result / precisionFactor;
+//   }
+// }
+
+
+export const [fMAX_H, fMAX_A] = [(b, dim) => W.bigint_dif(W.max_hilbert(b, dim), "1"), b => 2 ** b - 1];
 
 export const clamp = R.curry((m, M, x) =>
   typeof m === "string" || typeof M === "string" ?
@@ -30,7 +60,7 @@ export const scale = (a, A, b, B, x) =>
 export const reorder = R.sort((a: any, b) => a - b)
 export const zoom = p => ([m, M]) => [m + Math.min(0.5, p / 2) * (M - m), M - Math.min(0.5, p / 2) * (M - m)]
 export const lerp = (a, A, b, B, x, f = R.identity) => (f(x) - a) * (B - b) / (A - a) + b
-export const scale2bigint = (a, A, b, B, x) => W.bigint_prod((x - a) / (A - a), W.bigint_dif(B, b), 10**15);
+export const scale2bigint = (a, A, b, B, x) => W.bigint_prod((x - a) / (A - a), W.bigint_dif(B, b), 10 ** 15);
 
 //! bad code coverage
 // export const plus = R.curry((a, b) => typeof a === 'number' ? a + b : W.bigint_sum(a, b))
@@ -81,6 +111,9 @@ export const deepAlways = deepMap(R.always)
 */
 export const deepObjOf = (path: Array<str | num>, val) => R.assocPath(path, val, {})
 
+/** 
+ * 
+*/
 export const mergePartialWith = R.curry((f: any, A: object, B: object) => R.mergeWith(f, A, R.pick(R.keys(A), B)))
 
 /**
@@ -120,7 +153,7 @@ export function lerpLens(valField: str, rangeGetter: (obj: R<num>) => num2, othe
   return R.lens(lerpView(valField, rangeGetter, otherRange), lerpSet(valField, rangeGetter, otherRange));
 }
 
-export function stringToPath(s: string | undefined):Array<string | number> {
+export function stringToPath(s: string | undefined): Array<string | number> {
   return R.isEmpty(R.split(' ', s)) ? [] : R.map((x: any) => isNaN(x) ? x : Number(x), R.split(' ', s))
 }
 
@@ -141,7 +174,6 @@ export function evolve(transformations, object) {
       result[key] = value;
     }
   }
-
   return result;
 }
 
@@ -154,17 +186,18 @@ export const constrainEvolver = (obj, evolver, predicate, g) =>
   ])(obj);
 
 export const solve = R.curry(
-  (constraints,f, v) => {
-  //If a field x of v is undefined in f, we assume that it is equivalent to f having field x equal to the identity
-  const g0 = R.mapObjIndexed((x: num, i) => f[i] == undefined ? R.identity : f[i], v)
-  //! assumes that "constraints" have been sorted in propagation order
-  return constraints.reduce(
-    (evolver, { predicate, g }) => constrainEvolver(v, evolver, predicate, g(evolver, v)),
-    g0
-  )
-}
+  (constraints, f, v) => {
+    //If a field x of v is undefined in f, we assume that it is equivalent to f having field x equal to the identity
+    const g0 = R.mapObjIndexed((x: num, i) => f[i] == undefined ? R.identity : f[i], v)
+    //! assumes that "constraints" have been sorted in propagation order
+    return constraints.reduce(
+      (evolver, { predicate, g }) => constrainEvolver(v, evolver, predicate, g(evolver, v)),
+      g0
+    )
+  }
 )
 
 // lifts a solver to array of objects
-//mergePartialWith takes 
-export const liftSolve = R.curry((solver, F, X) => R.evolve(mergePartialWith(solver, F, X), X))
+export const liftSolve = R.curry((solver, F, X) => {
+  return R.evolve(mergePartialWith(solver, F, X), X)
+})
