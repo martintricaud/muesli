@@ -316,3 +316,34 @@ export const examples = [{
 	h_local: U.prod(BigInt(2 ** (32 * 10)), 0.5, 6),
 }]
 
+// osc(60,-0.015,0.3).diff(osc(60,0.08).rotate(Math.PI/2))
+// 	.modulateScale(noise(3.5,0.25).modulateScale(osc(15).rotate(()=>Math.sin(time/2))),0.6)
+// 	.color(1,0.5,0.4).contrast(1.4)
+// 	.add(src(o0).modulate(o0,.04),.6)
+// 	.invert().brightness(0.1).contrast(1.2)
+// 	.modulateScale(osc(2),-0.2)
+//   .out()
+
+// licensed with CC BY-NC-SA 4.0 https://creativecommons.org/licenses/by-nc-sa/4.0/
+// Asdrúbal Gomez
+// noise(3, 0.1, 6.157)
+// 	.rotate(1, -1.941, -2)
+// 	.mask(shape(20))
+// 	.colorama(0.959)
+// 	.modulateScale(o0)
+// 	.modulateScale(o0, 0.291)
+// 	.blend(o0)
+// 	.blend(o0)
+// 	.blend(o0)
+// 	.blend(o0)
+// 	.out(o0);
+
+// licensed with CC BY-NC-SA 4.0 https://creativecommons.org/licenses/by-nc-sa/4.0/
+// by Olivia Jack
+// https://ojack.github.io
+// osc(6.438, 0.142, 0.025)
+// 	.color(0.681, 0.198, -0.073)
+// 	.rotate(0.591, 0.136)
+// 	.pixelate(1.765, 39.107)
+// 	.modulate(noise(3.111), () => 1.422 * Math.sin(0.076 * time))
+// 	.out(o0);

@@ -10,7 +10,10 @@ interface Vec {
   y: number
 }
 
-export let HilbertForward = (p: BigInt, b: number, d: number) => W.forward(p.toString(), b, d)
+export let HilbertForward = (p: BigInt, b: number, d: number) => {
+  console.log(W.forward(p.toString(), b, d))
+  return W.forward(p.toString(), b, d)
+}
 export let HilbertInverse = (X: Uint32Array, b: number) => BigInt(W.inverse(X, b))
 export function ratio(a, b, precision):number{
   return Number(a * BigInt(precision) / b) / precision
@@ -23,44 +26,30 @@ export function prod(a,b,precision){
   else{
     let [numberOperand, bigintOperand] = typeof a === 'bigint' ? [b, a] : [a, b];
     //todo: I need to handle the case where numberOperand*10**precision is larger than MaxNumber
-    return BigInt(Math.round(numberOperand*10**precision))*bigintOperand / BigInt(10**precision)
+    let res =  BigInt(Math.round(numberOperand*10**precision))*bigintOperand / BigInt(10**precision)
+    console.log(res)
+    return res
   }
-
-  
-
 }
-// export function prod(a: number | bigint, b: number | bigint, precision: number): number | bigint {
-//   if (typeof a === 'number' && typeof b === 'number') {
-//     return a * b; // return product of two numbers
-//   } else if (typeof a === 'bigint' && typeof b === 'bigint') {
-//     return a * b; // return product of two bigints
-//   } else {
-//     const isBigIntA = typeof a === 'bigint';
-//     const isBigIntB = typeof b === 'bigint';
-//     const [numberOperand, bigintOperand] = isBigIntA ? [b, a] : [a, b];
-//     const result = bigintOperand * BigInt(Math.round(numberOperand * 10 ** precision));
-//     const precisionFactor = BigInt(10 ** precision);
-//     return isBigIntA || isBigIntB ? result : result / precisionFactor;
-//   }
-// }
-
-
-export const [fMAX_H, fMAX_A] = [(b, dim) => W.bigint_dif(W.max_hilbert(b, dim), "1"), b => 2 ** b - 1];
 
 export const clamp = R.curry((m, M, x) =>
   typeof m === "string" || typeof M === "string" ?
     W.bigint_clamp(m, M, x) :
     R.clamp(m, M, x))
 
-export const scale = (a, A, b, B, x) =>
-  typeof A === "string" || typeof B === "string" ?
-    scale2bigint(a, A, b, B, x) :
-    (x - a) * (B - b) / (A - a);
+//export const scale = (a, A, b, B, x, precision = 9) => (x - a) * (B - b) / (A - a);
 
 export const reorder = R.sort((a: any, b) => a - b)
 export const zoom = p => ([m, M]) => [m + Math.min(0.5, p / 2) * (M - m), M - Math.min(0.5, p / 2) * (M - m)]
-export const lerp = (a, A, b, B, x, f = R.identity) => (f(x) - a) * (B - b) / (A - a) + b
-export const scale2bigint = (a, A, b, B, x) => W.bigint_prod((x - a) / (A - a), W.bigint_dif(B, b), 10 ** 15);
+//export const lerp = (a, A, b, B, x, f = R.identity) => (f(x) - a) * (B - b) / (A - a) + b
+export const scale = (a, A, b, B, x, precision = 9) => {
+  console.log((x - a) / (A - a))
+  console.log(B-b)
+  return prod((x - a) / (A - a), B - b, precision);
+}
+export const lerp = (a, A, b, B, x, f = R.identity) => scale(a, A, b, B, f(x)) + b
+
+
 
 //! bad code coverage
 // export const plus = R.curry((a, b) => typeof a === 'number' ? a + b : W.bigint_sum(a, b))

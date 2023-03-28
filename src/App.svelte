@@ -83,10 +83,8 @@
     {
       name: 'preset0',
       inputSpace: preset1,
-      h_global: W.bigint_prod(0.1, U.fMAX_H(32, 19), 100),
-      //h_global: W.bigint_prod(0.1, U.HilbertMax(32, 19), 100),
-      h_local: W.bigint_prod(0.5, U.fMAX_H(32, 19), 100),
-      //h_local: W.bigint_prod(0.1, U.HilbertMax(32, 19), 100),
+      h_global: U.prod(0.1, BigInt(2**(32*19)-1), 9),
+      h_local: U.prod(0.1, BigInt(2**(32*19)-1), 9),
       // z: 1,
     },
   ]);
@@ -96,10 +94,8 @@
   //presetFocus defines the preset of parameters currently loaded
   //DeltaZoom is the zoom factor
   const [presetFocus, DeltaZoom] = [writable(0), writable(1)];
-  $: [H_global, H_local, InputSpace, Bits, Unlocked, Inputs] = MuesliStore($presets[$presetFocus]);
+  $: [H_global, H_local, InputSpace, Bits, Unlocked, Inputs, MaxH] = MuesliStore($presets[$presetFocus]);
   $: data = R.toPairs($InputSpace);
-  $: console.log($TemplateGroups[SelectedTemplate][SelectedPreset])
-  $: console.log($DeltaZoom)
 
   /** EFFECTFUL FUNCTIONS
    * modify reactive values, can be thought of has handlers
@@ -120,24 +116,29 @@
   }
 
   function lever_effect(ev) {
+   
     let [key, field] = U.stringToPath(ev.detail.targetPath);
     if (ev.detail.targetStore == 0) {
-      let val = U.scale2bigint(
+
+      let val = U.lerp(
         TRACKOFFSET,
         TRACKOFFSET + track_w,
-        '0',
-        U.fMAX_H($Bits, $Unlocked.length),
+        0n,
+        $MaxH,
         ev.detail.cursorValue.x
       );
+
+      console.log(val)
       H_global.set(val);
     } else if (ev.detail.targetStore == 1) {
-      let val = U.scale2bigint(
+      let val = U.lerp(
         TRACKOFFSET,
         TRACKOFFSET + track_w,
-        '0',
-        U.fMAX_H($Bits, $Unlocked.length),
+        0n,
+        $MaxH,
         ev.detail.cursorValue.x
       );
+      console.log(val)
       H_local.set(val);
     } else if (ev.detail.targetStore == 2) {
       let val = U.lerp(
@@ -164,7 +165,21 @@
   */
   function save_handler(val) {
     presets.add(val);
-    let update = R.assocPath([SelectedTemplate, SelectedPreset],)
+    console.log($InputSpace)
+    let toAdd = {
+      name: SelectedTemplate,
+      preset: SelectedPreset,
+      inputSpace: $InputSpace,
+      h_local: $H_local,
+      h_global: $H_global,
+      synth: $TemplateGroups[SelectedTemplate][SelectedPreset].synth
+    }
+    $Templates = [...$Templates, toAdd]
+    // console.log($Templates)
+    console.log($TemplateGroups[SelectedTemplate][SelectedPreset].inputSpace)
+
+    // Templates.update(x=>x.push(toAdd))
+    // let update = R.assocPath([SelectedTemplate, SelectedPreset],)
 
   }
 
@@ -180,6 +195,10 @@
     H_global.set($presets[i].h_global);
     H_local.set($presets[i].h_local);
     InputSpace.set(R.fromPairs($presets[i].inputSpace));
+
+    // H_global.set($TemplateGroups[SelectedTemplate][SelectedPreset].h_global);
+    // H_local.set($TemplateGroups[SelectedTemplate][SelectedPreset].h_local);
+    // InputSpace.set($TemplateGroups[SelectedTemplate][SelectedPreset])
   }
 
   function wheel_effect(e) {
@@ -228,16 +247,16 @@
         save_handler({ inputSpace: data, h_global: $H_global, h_local: $H_local})}
       ><u>save</u></button
     >
-    {#if $presets.length > 0}
+    <!-- {#if $presets.length > 0}
       {#each $presets as { name }, i}
         <div class="erasable canvas {ff}" on:click={() => load_handler(i)}>
           <HydraViewer synth={synth1} data={preset_data[i]} w={150} h={150} autoloop={false} />
           <span>{name}</span>
         </div>
       {/each}
-    {/if}
+    {/if} -->
 
-    <!-- {#each $TemplateGroups[SelectedTemplate] as { name, synth, inputSpace, H_global, H_local }, i}
+    {#each $TemplateGroups[SelectedTemplate] as { name, synth, inputSpace, h_global, h_local }, i}
       <label class="erasable canvas {ff}">
         <input type="radio" bind:group={SelectedPreset} {name} value={i} />
         <HydraViewer
@@ -248,7 +267,7 @@
           autoloop={false}
         />
       </label>
-    {/each} -->
+    {/each}
   </div>
   <div class="ui">
     {#if SelectedUI != 'default'}
@@ -261,7 +280,7 @@
               class="thumb unlocked"
               data-store="0"
               data-path="h b"
-              style="left:{W.rescale_index($H_global, $Bits, $Unlocked.length) * thumb_w}px"
+              style="left:{W.rescale_index($H_global.toString(), $Bits, $Unlocked.length) * track_w}px"
               bind:clientWidth={thumb_w}
             />
           </div>
@@ -275,7 +294,7 @@
               data-store="1"
               data-path="h a"
               class="thumb unlocked"
-              style="left:{W.rescale_index($H_local, $Bits, $Unlocked.length) * thumb_w}px"
+              style="left:{W.rescale_index($H_local.toString(), $Bits, $Unlocked.length) * track_w}px"
               bind:clientWidth={thumb_w}
             />
           </div>
