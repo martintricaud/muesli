@@ -79,7 +79,7 @@ export const synth2 = a => x =>
 //     .modulateHue(
 //         x.src(x.o0).scale(1.01),1)
 //     .layer(x.osc(4,0.5,2).mask(x.shape(4,0.5,0.001)))
-//     .modulate(x.noise(a.noiseScale),a.modulationAmount)
+//     .modulate(x.noise(a.noise_scale),a.modulationAmount)
 //     .blend(x
 //         .src(x.o0)
 //         .modulate(
@@ -105,8 +105,8 @@ export const synth2 = a => x =>
 
 
 // export const preset1: Array<[string, Record<string, number | boolean>]> = [
-//     ["noiseScale", { c0: 0, c1: 1, locked:false }], //freq, float, no right bound but above 100 is a lot
-//     ["noiseScale2", { c0: 0, c1: 1, locked:false }], //freq, float, no right bound but above 100 is a lot
+//     ["noise_scale", { c0: 0, c1: 1, locked:false }], //freq, float, no right bound but above 100 is a lot
+//     ["noise_scale2", { c0: 0, c1: 1, locked:false }], //freq, float, no right bound but above 100 is a lot
 //     ["noiseOffset2", { c0: 0, c1: 10, locked:false }], //freq, float, no right bound but above 100 is a lot
 //     ["modulationAmount2", { c0: 0, c1: 5, locked:false }], //offset
 //     ["blendAmount", { c0: 0, c1: 10, locked:false }], //red, int
@@ -117,9 +117,9 @@ export const synth2 = a => x =>
 //     ["noiseThresholdTolerance", { c0: 0, c1: 1, locked:false }], //offset
 //     ["shapeSize", { c0: 0.1, c1: 2, locked:false }], //offset
 //     ["shapeSize2", { c0: 0.1, c1: 2, locked:false }], //offset
-//     ["oscillator2Frequency", { c0: 0, c1: 100, locked:false }], //offset
-//     ["oscillator2Offset", { c0: 0, c1: 5, locked:false }], //offset
-//     ["oscillator1Offset", { c0: 0, c1: 5, locked:false }], //offset
+//     ["oscillator_2_frequency", { c0: 0, c1: 100, locked:false }], //offset
+//     ["oscillator_2_offset", { c0: 0, c1: 5, locked:false }], //offset
+//     ["oscillator_1_offset", { c0: 0, c1: 5, locked:false }], //offset
 //     ["rotate", { c0: 0, c1: 1, locked:false }], //offset
 //     ["shapeScale", { c0: 0.1, c1: 10, locked:false }], //offset
 //     ["voronoi", { c0: 1, c1: 20, locked:false }], //offset
@@ -136,36 +136,36 @@ export const synth2 = a => x =>
 export const preset1 = [
 	["frequency", { c0: 0.0001, c1: 100, a: 20, locked: false, display: "frequency" }],
 	["offset", { c0: 0.0001, c1: 1, a: 0.5, locked: false, display: "offset" }],
-	["noiseScale", { c0: 1, c1: 10, a: 5, locked: false, display: "noise scale" }],
+	["noise_scale", { c0: 1, c1: 10, a: 5, locked: false, display: "noise scale" }],
 	// ["noiseOffset", { c0: 0.0001, c1: 1, locked:false }],
-	["noiseScale1", { c0: -10, c1: 10, a: 5, locked: false, display: "noise scale 1" }],
+	["noise_scale_1", { c0: -10, c1: 10, a: 5, locked: false, display: "noise scale 1" }],
 	// ["noiseOffset1", { c0: 0.0001, c1: 1, locked:false }],
-	["modulationAmount1", { c0: 0.0001, c1: 1, a: 0.5, locked: false, display: "modulation amount" }],
-	["modulationAmount2", { c0: 0.0001, c1: 1, a: 0.5, locked: false, display: "modulation amount 2" }]]
+	["modulation_amount_1", { c0: 0.0001, c1: 1, a: 0.5, locked: false, display: "modulation amount" }],
+	["modulation_amount_2", { c0: 0.0001, c1: 1, a: 0.5, locked: false, display: "modulation amount 2" }]]
 
-//export const synth1 = a=>x=>x.osc(a.frequency, 1/a.frequency, a.offset).modulate(x.src(x.o0).modulate(x.noise(a.noiseScale, 1/a.noiseScale),a.modulationAmount1),a.modulationAmount2).posterize().out(x.o0)
-export const synth1 = a => x => x["noise"](a.noiseScale1, 1 / a.noiseScale1)["modulate"](x.src(x.o0)["modulate"](x.osc(a.frequency, 1 / a.frequency, a.offset), a.modulationAmount1), a.modulationAmount2)["posterize"]()["out"](x.o0)
+//export const synth1 = a=>x=>x.osc(a.frequency, 1/a.frequency, a.offset).modulate(x.src(x.o0).modulate(x.noise(a.noise_scale, 1/a.noise_scale),a.modulationAmount1),a.modulationAmount2).posterize().out(x.o0)
+export const synth1 = a => x => x["noise"](a.noise_scale1, 1 / a.noise_scale1)["modulate"](x.src(x.o0)["modulate"](x.osc(a.frequency, 1 / a.frequency, a.offset), a.modulation_amount_1), a.modulation_amount_2)["posterize"]()["out"](x.o0)
 
 // export const synth1 = a => x => x.src(x.o0)
 //     .modulateHue(
 //         x.src(x.o0).scale(a.feedbackScale),a.hueModulationAmount
 //     )
 //     .layer(
-//         x.osc(a.oscillator1Frequency,0, a.oscillator1Offset+0.5)
+//         x.osc(a.oscillator1Frequency,0, a.oscillator_1_offset+0.5)
 //             .mult(x.voronoi(Math.log(a.voronoi),0,a.voronoi),a.modulationAmount2)
 //                 .mask(
 //                     x.shape(4,a.shapeSize, Math.abs(1-a.shapeSmoothing))
-//                     .modulateRepeat(x.osc(a.oscillator1Frequency,0,a.oscillator2Offset+1), 3.0, 3.0, 0.5, 0.5)
+//                     .modulateRepeat(x.osc(a.oscillator1Frequency,0,a.oscillator_2_offset+1), 3.0, 3.0, 0.5, 0.5)
 //                 )
 //     )
-//     .modulate(x.noise(a.noiseScale).thresh(a.noiseThreshold,a.noiseThresholdTolerance),a.modulationAmount2)
+//     .modulate(x.noise(a.noise_scale).thresh(a.noiseThreshold,a.noiseThresholdTolerance),a.modulationAmount2)
 //     .shift(a.shiftRed,a.shiftGreen,a.shiftBlue)
 //     .add(x
 //         .src(x.o0)
 //         .modulate(
-//             x.osc(a.oscillator2Frequency+10,0,a.oscillator2Offset)
+//             x.osc(a.oscillator_2_frequency+10,0,a.oscillator_2_offset)
 //             .modulate(
-//                 x.noise(a.noiseScale2,a.noiseOffset2).thresh(a.noiseThreshold,a.noiseThresholdTolerance)
+//                 x.noise(a.noise_scale2,a.noiseOffset2).thresh(a.noiseThreshold,a.noiseThresholdTolerance)
 //                 .sub(
 //                     x.gradient().saturate(a.saturationAmount)
 //                 )
@@ -175,7 +175,7 @@ export const synth1 = a => x => x["noise"](a.noiseScale1, 1 / a.noiseScale1)["mo
 //        a.modulationAmount2)
 //         .layer(
 //             x.osc(
-//                 Math.sqrt(a.oscillator1Frequency),0,a.oscillator2Offset
+//                 Math.sqrt(a.oscillator1Frequency),0,a.oscillator_2_offset
 //             ).rotate(a.rotate)
 //             // .posterize(0.1,0.6 )
 //             .mask(
@@ -203,55 +203,53 @@ export const examples = [{
 	name: "ojack1",
 	preset: "preset1",
 	inputSpace: [
-		["oscillatorFrequency", { c0: 0.0001, c1: 100, a: 1, locked: false }],
-		["oscillatorOffset", { c0: 0.0001, c1: 1, a: 1, locked: false }],
-		["kaleidoscopeShape", { c0: 0, c1: 20, a: 1, locked: false }],
+		["oscillator_frequency", { c0: 0.0001, c1: 100, a: 1, locked: false }],
+		["oscillator_offset", { c0: 0.0001, c1: 1, a: 1, locked: false }],
+		["kaleidoscope_shape", { c0: 1, c1: 20, a: 2, locked: false }],
 		["red", { c0: 0, c1: 1, a: 1, locked: false }],
 		["green", { c0: 0, c1: 1, a: 1, locked: false }],
 		["blue", { c0: 0, c1: 1, a: 1, locked: false }],
-		["rotation1", { c0: 0, c1: 1, a: 1, locked: false }],
-		["rotation2", { c0: 0, c1: 1, a: 1, locked: false }],
-		["scaleFactor", { c0: 0.0001, c1: 1, a: 1, locked: false }],
-		["modulationAmount", { c0: 0.0001, c1: 1, a: 1, locked: false }]
+		["rotation_1", { c0: 0, c1: 1, a: 1, locked: false }],
+		["rotation_2", { c0: 0, c1: 1, a: 1, locked: false }],
+		["scale_factor", { c0: 0.0001, c1: 1, a: 1, locked: false }],
+		["modulation_amount", { c0: 0.0001, c1: 1, a: 1, locked: false }]
 	],
 	synth: a => x => {
-		return x.osc(a.oscillatorFrequency, 1 / a.oscillatorFrequency, a.oscillatorOffset)
-			.kaleid(a.kaleidoscopeShape)
+		return x.osc(a.oscillator_frequency, 1 / a.oscillator_frequency, a.oscillator_offset)
+			.kaleid(a.kaleidoscope_shape)
 			.color(a.red, a.green, a.blue)
-			.rotate(a.rotation1, a.rotation2)
-			.modulate(x.o0, a.modulationAmount)
-			.scale(a.scaleFactor)
+			.rotate(a.rotation_1, a.rotation_2)
+			.modulate(x.o0, a.modulation_amount)
+			.scale(a.scale_factor)
 			.out(x.o0)
 	},
 	h_global: U.prod(BigInt(2 ** (32 * 10)), 0.1, 6),
 	h_local: U.prod(BigInt(2 ** (32 * 10)), 0.5, 6),
 }, {
-	// licensed with CC BY-NC-SA 4.0 https://creativecommons.org/licenses/by-nc-sa/4.0/
-	// Puertas III
-	// por Celeste Betancur
 	// https://github.com/essteban
-	name: "puertas3",
+	author: "Celeste Betancur",
+	name: "Puertas III",
 	preset: "preset1",
 	inputSpace: [
-		["oscillator1Frequency", { c0: 0.0001, c1: 100, a: 1, locked: false }],
-		["oscillator1Offset", { c0: 0.0001, c1: 1, a: 1, locked: false }],
-		["oscillator2Frequency", { c0: 0.0001, c1: 100, a: 1, locked: false }],
-		["oscillator2Offset", { c0: 0.0001, c1: 1, a: 1, locked: false }],
-		["kaleidoscopeShape", { c0: 0, c1: 20, a: 1, locked: false }],
+		["oscillator_1_frequency", { c0: 0.0001, c1: 100, a: 1, locked: false }],
+		["oscillator_1_offset", { c0: 0.0001, c1: 1, a: 1, locked: false }],
+		["oscillator_2_frequency", { c0: 0.0001, c1: 100, a: 1, locked: false }],
+		["oscillator_2_offset", { c0: 0.0001, c1: 1, a: 1, locked: false }],
+		["kaleidoscope_shape", { c0: 1, c1: 20, a: 1, locked: false }],
 		["repeatX", { c0: 0, c1: 20, a: 1, locked: false }],
 		["repeatY", { c0: 0, c1: 20, a: 1, locked: false }],
-		["modulationAmount", { c0: 0.0001, c1: 1, a: 1, locked: false }],
+		["modulation_amount", { c0: 0.0001, c1: 1, a: 1, locked: false }],
 		["modulatingShapeSides", { c0: 0, c1: 20, a: 1, locked: false }],
 		["modulatingShapeScale", { c0: 0.0001, c1: 10, a: 1, locked: false }],
 		["modulatingShapeFade", { c0: 0, c1: 1, a: 1, locked: false }],
 	],
 	synth: a => x => {
-		return x.osc(a.oscillator1Frequency, 1 / a.oscillator1Frequency, a.oscillator1Offset)
+		return x.osc(a.oscillator_1_frequency, 1 / a.oscillator_1_frequency, a.oscillator_1_offset)
 			.modulateScale(
-				x.osc(a.oscillator2Frequency, 1 / a.oscillator2Frequency, a.oscillator2Offset)
-					.kaleid(a.kaleidoscopeShape))
+				x.osc(a.oscillator_2_frequency, 1 / a.oscillator_2_frequency, a.oscillator_2_offset)
+					.kaleid(a.kaleidoscope_shape))
 			.repeat(a.repeatX, a.repeatY)
-			.modulate(x.o0, a.modulationAmount)
+			.modulate(x.o0, a.modulation_amount)
 			.modulateKaleid(x.shape(a.modulatingShapeSides, a.modulatingShapeScale, a.modulatingShapeFade))
 			.out(x.o0);
 	},
@@ -261,59 +259,95 @@ export const examples = [{
 	// licensed with CC BY-NC-SA 4.0 https://creativecommons.org/licenses/by-nc-sa/4.0/
 	// by Olivia Jack
 	// https://ojack.github.io
+	author: "Olivia Jack",
 	name: "ojack2",
 	preset: "preset1",
 	inputSpace: [
-		["oscillator1Frequency", { c0: 0.0001, c1: 100, a:1, locked: false }],
-		["oscillator1Offset", { c0: 0.0001, c1: 1, a:1, locked: false }],
-		["oscillator2Frequency", { c0: 0.0001, c1: 100, a:1, locked: false }],
-		["oscillator2Offset", { c0: 0.0001, c1: 1, a:1, locked: false }],
-		["oscillator2Threshold", { c0: 0, c1: 1, a:1, locked: false }],
-		["oscillator2Rotation", { c0: 0, c1: 1, a:1, locked: false }],
-		["oscillator3Frequency", { c0: 0.0001, c1: 100, a:1, locked: false }],
-		["oscillator3Offset", { c0: 0.0001, c1: 1, a:1, locked: false }],
-		["oscillator3Threshold", { c0: 0, c1: 1, a:1, locked: false }],
-		["oscillator3ThresholdTolerance", { c0: 0, c1: 1, a:1, locked: false }],
-		["oscillator3ModulationAmount", { c0: 0, c1: 1, a:1, locked: false }],
-		["kaleidoscopeShape", { c0: 0, c1: 20, a:1, locked: false }],
-		["red", { c0: 0, c1: 1, a:1, locked: false }],
-		["green", { c0: 0, c1: 1, a:1, locked: false }],
-		["blue", { c0: 0, c1: 1, a:1, locked: false }],
-		["rotation", { c0: 0, c1: 1, a:1, locked: false }],
-		["scaleFactor", { c0: 0.0001, c1: 1, a:1, locked: false }],
-		["feedbackRotation", { c0: 0, c1: 1, a:1, locked: false }],
-		["feedbackModulationAmount", { c0: 0, c1: 1,a:1,  locked: false }]
+		["oscillator_1_frequency", { c0: 0.0001, c1: 100, a: 1, locked: false }],
+		["oscillator_1_offset", { c0: 0.0001, c1: 1, a: 1, locked: false }],
+		["oscillator_2_frequency", { c0: 0.0001, c1: 100, a: 1, locked: false }],
+		["oscillator_2_offset", { c0: 0.0001, c1: 1, a: 1, locked: false }],
+		["oscillator_2_threshold", { c0: 0, c1: 1, a: 1, locked: false }],
+		["oscillator_2_rotation", { c0: 0, c1: 1, a: 1, locked: false }],
+		["oscillator_3_frequency", { c0: 0.0001, c1: 100, a: 1, locked: false }],
+		["oscillator_3_offset", { c0: 0.0001, c1: 1, a: 1, locked: false }],
+		["oscillator_3_threshold", { c0: 0, c1: 1, a: 1, locked: false }],
+		["oscillator_3_threshold_tolerance", { c0: 0, c1: 1, a: 1, locked: false }],
+		["oscillator_3_modulation_amount", { c0: 0, c1: 1, a: 1, locked: false }],
+		["red", { c0: 0, c1: 1, a: 1, locked: false }],
+		["green", { c0: 0, c1: 1, a: 1, locked: false }],
+		["blue", { c0: 0, c1: 1, a: 1, locked: false }],
+		["rotation", { c0: 0, c1: 1, a: 1, locked: false }],
+		["scale_factor", { c0: 0.0001, c1: 1, a: 1, locked: false }],
+		["feedback_rotation", { c0: 0, c1: 1, a: 1, locked: false }],
+		["feedback_modulation_amount", { c0: 0, c1: 1, a: 1, locked: false }]
 	],
 	synth: a => x => {
-		return x.osc(a.oscillator1Frequency, 1 / a.oscillator1Frequency, a.oscillator1Offset)
-			.modulate(x.src(x.o0)
-				.rotate(a.feedbackRotation), a.feedbackModulationAmount)
+		return x.osc(a.oscillator_1_frequency, 1 / a.oscillator_1_frequency, a.oscillator_1_offset)
+			.modulate(
+				x.src(x.o0)
+				.rotate(a.feedback_rotation), a.feedback_modulation_amount)
 			.color(a.red, a.green, a.blue)
 			.rotate(a.rotation, 0)
 			.pixelate(0.576, 12.888)
-			.mult(x.osc(a.oscillator2Frequency, 1 / a.oscillator2Frequency, a.oscillator2Offset)
-				.thresh(a.oscillator2Threshold)
-				.rotate(a.oscillator2Rotation, 0))
-			.modulateRotate(x.osc(a.oscillator3Frequency, 1 / a.oscillator3Frequency, a.oscillator3Offset)
-				.thresh(a.oscillator3Threshold, a.oscillator3ThresholdTolerance), a.oscillator3ModulationAmount)
+			.mult(
+				x.osc(a.oscillator_2_frequency, 1 / a.oscillator_2_frequency, a.oscillator_2_offset)
+				.thresh(a.oscillator_2_threshold)
+				.rotate(a.oscillator_2_rotation_, 0))
+			.modulateRotate(x.osc(a.oscillator_3_frequency, 1 / a.oscillator_3_frequency, a.oscillator_3_offset)
+				.thresh(a.oscillator_3_threshold, a.oscillator_3_threshold_tolerance), a.oscillator_3_modulation_amount)
 			.out(x.o0);
 	},
 	h_global: U.prod(BigInt(2 ** (32 * 10)), 0.1, 6),
 	h_local: U.prod(BigInt(2 ** (32 * 10)), 0.5, 6),
-}, {
+},{
 	name: "dualNoiseBW",
+	preset: "preset1",
 	inputSpace:
 		[
-			["frequency", { c0: 0.0001, c1: 100, a:1, locked: false, display: "frequency" }],
-			["offset", { c0: 0.0001, c1: 1, a:1, locked: false, display: "offset" }],
-			["noiseScale", { c0: 1, c1: 10, a:1, locked: false, display: "noise scale" }],
-			["noiseScale1", { c0: -10, c1: 10, a:1, locked: false, display: "noise scale 1" }],
-			["modulationAmount1", { c0: 0.0001, c1: 1, a:1, locked: false, display: "modulation amount" }],
-			["modulationAmount2", { c0: 0.0001, c1: 1, a:1, locked: false, display: "modulation amount 2" }]
+			["frequency", { c0: 0.0001, c1: 100, a: 1, locked: false }],
+			["offset", { c0: 0.0001, c1: 1, a: 1, locked: false  }],
+			["noise_scale", { c0: 1, c1: 10, a: 1, locked: false }],
+			["noise_scale_1", { c0: -10, c1: 10, a: 1, locked: false }],
+			["modulation_amount_1", { c0: 0.0001, c1: 1, a: 1, locked: false }],
+			["modulation_amount_2", { c0: 0.0001, c1: 1, a: 1, locked: false }]
 		],
-	synth: a => x => x.noise(a.noiseScale1, 1 / a.noiseScale1).modulate(x.src(x.o0).modulate(x.osc(a.frequency, 1 / a.frequency, a.offset), a.modulationAmount1), a.modulationAmount2).posterize().out(x.o0),
+	synth: a => x => {
+		return x.noise(a.noise_scale_1, 1 / a.noise_scale_1)
+			.modulate(
+				x.src(x.o0)
+				.modulate(
+					x.osc(a.frequency, 1 / a.frequency, a.offset), a.modulation_amount_1), a.modulation_amount_2)
+			.posterize()
+			.out(x.o0)
+	},
 	h_global: U.prod(BigInt(2 ** (32 * 10)), 0.1, 6),
 	h_local: U.prod(BigInt(2 ** (32 * 10)), 0.5, 6),
+},{
+	author: "Asdrúbal Gomez",
+	name:"",
+	preset:"",
+	inputSpace:[
+		["frequency", { c0: 0.0001, c1: 100, a: 1, locked: false }],
+		["offset", { c0: 0.0001, c1: 1, a: 1, locked: false  }],
+		["noise_scale", { c0: 1, c1: 10, a: 1, locked: false }],
+		["noise_scale_1", { c0: -10, c1: 10, a: 1, locked: false }],
+		["modulation_amount_1", { c0: 0.0001, c1: 1, a: 1, locked: false }],
+		["modulation_amount_2", { c0: 0.0001, c1: 1, a: 1, locked: false }]
+	],
+	synth:a => x => {
+		return x.noise(3, 0.1, 6.157)
+		.rotate(1, -1.941, -2)
+		.mask(x.shape(20))
+		.colorama(0.959)
+		.modulateScale(x.o0)
+		.modulateScale(x.o0, 0.291)
+		.blend(x.o0)
+		.blend(x.o0)
+		.blend(x.o0)
+		.blend(x.o0)
+		.out(x.o0);
+	}
 }]
 
 // osc(60,-0.015,0.3).diff(osc(60,0.08).rotate(Math.PI/2))
@@ -326,17 +360,7 @@ export const examples = [{
 
 // licensed with CC BY-NC-SA 4.0 https://creativecommons.org/licenses/by-nc-sa/4.0/
 // Asdrúbal Gomez
-// noise(3, 0.1, 6.157)
-// 	.rotate(1, -1.941, -2)
-// 	.mask(shape(20))
-// 	.colorama(0.959)
-// 	.modulateScale(o0)
-// 	.modulateScale(o0, 0.291)
-// 	.blend(o0)
-// 	.blend(o0)
-// 	.blend(o0)
-// 	.blend(o0)
-// 	.out(o0);
+
 
 // licensed with CC BY-NC-SA 4.0 https://creativecommons.org/licenses/by-nc-sa/4.0/
 // by Olivia Jack

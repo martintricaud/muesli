@@ -1,10 +1,9 @@
 <script>
-  import { deepObjOf } from './lib/utils.ts';
   import { writable, get, derived } from 'svelte/store';
   import { onMount } from 'svelte';
   import { wasm_functions as W } from './main.js';
   import { MuesliStore, PresetStore, InputValues } from './lib/storesFactories';
-  import { synth1, preset1, examples } from './lib/data';
+  import { examples } from './lib/data';
   import * as U from './lib/utils';
   import * as S from './lib/utils-streams';
   import * as R from 'ramda';
@@ -19,27 +18,19 @@
   const TemplateGroups = derived(Templates, R.groupBy(R.prop('name')));
   let SelectedTemplate = 'dualNoiseBW';
   let SelectedPreset = 0;
+  const Active = derived(TemplateGroups, x=>x[SelectedPreset]);
+
   /**
    * naming: ff = feedforward
    * naming: w = width
    * naming: h = height
    * naming: ev = event
-   * naming: xPre = previous element
-   * naming: xCur = current element
-   * naming: xNex = next element
    */
 
   /* naming: BINDINGS FOR DOM ELEMENTS AND THEIR SIZES / STYLE CLASSES */
 
   const palette = writable({ x: 0, y: 0 });
-  let ih,
-    macro_w,
-    track_w,
-    range_w,
-    TRACKOFFSET,
-    hidden,
-    SelectedUI,
-    thumb_w = 5;
+  let ih, macro_w, track_w, range_w, TRACKOFFSET, hidden, SelectedUI, thumb_w = 6;
 
   let instruments = {
     fix: {
@@ -63,7 +54,7 @@
       ff: 'willNone',
       effect: cursor_effect,
     },
-        // eraser: {
+    // eraser: {
     //   name: 'erase',
     //   equipped: false,
     //   component: IEraser,
@@ -75,32 +66,21 @@
 
   //reactive value that returns the name of the currently equipped instrument
   $: equipped = R.keys(R.pickBy((x, key) => x.equipped, instruments))[0];
-  $: console.log(equipped);
   //reactive value that returns the feedforward style for the selected instrument
   $: ff = instruments[equipped].ff;
 
-  const presets = PresetStore([
-    {
-      name: 'preset0',
-      inputSpace: preset1,
-      h_global: U.prod(0.1, BigInt(2**(32*19)-1), 9),
-      h_local: U.prod(0.1, BigInt(2**(32*19)-1), 9),
-      // z: 1,
-    },
-  ]);
 
-  $: preset_data = R.map((x) => R.pluck('a', get(MuesliStore(x)[2])), $presets);
-
-  //presetFocus defines the preset of parameters currently loaded
   //DeltaZoom is the zoom factor
-  const [presetFocus, DeltaZoom] = [writable(0), writable(1)];
-  $: [H_global, H_local, InputSpace, Bits, Unlocked, Inputs, MaxH] = MuesliStore($presets[$presetFocus]);
+  const DeltaZoom = writable(1)
+  $: [H_global, H_local, InputSpace, Bits, Unlocked, Inputs, MaxH] = MuesliStore(
+    $TemplateGroups[SelectedTemplate][SelectedPreset]
+  );
   $: data = R.toPairs($InputSpace);
 
   /** EFFECTFUL FUNCTIONS
    * modify reactive values, can be thought of has handlers
-   * 
-  */
+   *
+   */
 
   function cursor_effect(ev) {
     console.log($EventStore);
@@ -116,40 +96,14 @@
   }
 
   function lever_effect(ev) {
-   
     let [key, field] = U.stringToPath(ev.detail.targetPath);
+    let lerpTo = U.lerp(TRACKOFFSET, TRACKOFFSET + track_w, R.__, R.__, ev.detail.cursorValue.x);
     if (ev.detail.targetStore == 0) {
-
-      let val = U.lerp(
-        TRACKOFFSET,
-        TRACKOFFSET + track_w,
-        0n,
-        $MaxH,
-        ev.detail.cursorValue.x
-      );
-
-      console.log(val)
-      H_global.set(val);
+      H_global.set(lerpTo(0n, $MaxH));
     } else if (ev.detail.targetStore == 1) {
-      let val = U.lerp(
-        TRACKOFFSET,
-        TRACKOFFSET + track_w,
-        0n,
-        $MaxH,
-        ev.detail.cursorValue.x
-      );
-      console.log(val)
-      H_local.set(val);
+      H_local.set(lerpTo(0n, $MaxH));
     } else if (ev.detail.targetStore == 2) {
-      let val = U.lerp(
-        TRACKOFFSET,
-        TRACKOFFSET + track_w,
-        $InputSpace[key].c0,
-        $InputSpace[key].c1,
-        ev.detail.cursorValue.x
-      );
-
-      InputSpace.evolve(U.deepObjOf([key, field], (x) => val));
+      InputSpace.evolve(U.deepObjOf([key, field], (x) => lerpTo($InputSpace[key].c0, $InputSpace[key].c1)));
     }
   }
 
@@ -161,26 +115,19 @@
   // }
 
   /** HANDLERS
-  * modify reactive values, but in a non instrumental way
-  */
-  function save_handler(val) {
-    presets.add(val);
-    console.log($InputSpace)
+   * modify reactive values, but in a non instrumental way
+   */
+  function save_handler() {
     let toAdd = {
       name: SelectedTemplate,
       preset: SelectedPreset,
-      inputSpace: $InputSpace,
+      inputSpace: R.toPairs($InputSpace),
       h_local: $H_local,
       h_global: $H_global,
-      synth: $TemplateGroups[SelectedTemplate][SelectedPreset].synth
-    }
-    $Templates = [...$Templates, toAdd]
-    // console.log($Templates)
-    console.log($TemplateGroups[SelectedTemplate][SelectedPreset].inputSpace)
-
-    // Templates.update(x=>x.push(toAdd))
-    // let update = R.assocPath([SelectedTemplate, SelectedPreset],)
-
+      synth: $TemplateGroups[SelectedTemplate][SelectedPreset].synth,
+    };
+    console.log(R.toPairs($InputSpace))
+    Templates.update(R.insert(-1,toAdd))
   }
 
   function equip_effect(name) {
@@ -191,18 +138,15 @@
   }
 
   function load_handler(i) {
-    presetFocus.set(i);
-    H_global.set($presets[i].h_global);
-    H_local.set($presets[i].h_local);
-    InputSpace.set(R.fromPairs($presets[i].inputSpace));
-
-    // H_global.set($TemplateGroups[SelectedTemplate][SelectedPreset].h_global);
-    // H_local.set($TemplateGroups[SelectedTemplate][SelectedPreset].h_local);
-    // InputSpace.set($TemplateGroups[SelectedTemplate][SelectedPreset])
+    H_global.set($TemplateGroups[SelectedTemplate][SelectedPreset].h_global);
+    H_local.set($TemplateGroups[SelectedTemplate][SelectedPreset].h_local);
+    InputSpace.set($TemplateGroups[SelectedTemplate][SelectedPreset].inputSpace)
   }
 
   function wheel_effect(e) {
-    let curr = R.clamp(0.0000001, 1, $DeltaZoom + U.scale(0, ih * 100, 0.0000001, 1, e.wheelDeltaY));
+    let curr = R.clamp(
+      1e-6,1,$DeltaZoom + U.scale(0, ih * 100, 1e-6, 1, e.wheelDeltaY)
+    );
     let f = (x) => (curr / $DeltaZoom) * x;
     InputSpace.evolve(R.map(R.always(R.objOf('z', f)), $InputSpace));
     DeltaZoom.set(curr);
@@ -226,7 +170,11 @@
   bind:innerHeight={ih}
   on:keydown={(ev) => UIOptions.update(R.assoc('noscroll', ev.shiftKey))}
   on:keyup={(ev) => UIOptions.update(R.assoc('noscroll', ev.shiftKey))}
-  on:keydown={(ev) => (hidden = ev.key == ' ' ? true : hidden && true)}
+  on:keydown={(ev) => {
+    hidden = ev.key == ' ' ? true : hidden && true;
+    document.getElementById("select-ui").blur()
+    document.getElementById("select-template").blur()
+    }}
   on:keyup={(ev) => (hidden = ev.key == ' ' ? false : hidden || false)}
   on:mousemove={(ev) => {
     hidden ? palette.update((x) => x) : ($palette = { x: ev.x, y: ev.y });
@@ -239,26 +187,17 @@
     TRACKOFFSET = val;
   }}
 />
-<main class="grid">
+<main class="grid" id="main">
   <div class="snapshots">
     <button
       data-path=""
-      on:click={() =>
-        save_handler({ inputSpace: data, h_global: $H_global, h_local: $H_local})}
+      on:click={() => save_handler()}
       ><u>save</u></button
     >
-    <!-- {#if $presets.length > 0}
-      {#each $presets as { name }, i}
-        <div class="erasable canvas {ff}" on:click={() => load_handler(i)}>
-          <HydraViewer synth={synth1} data={preset_data[i]} w={150} h={150} autoloop={false} />
-          <span>{name}</span>
-        </div>
-      {/each}
-    {/if} -->
 
-    {#each $TemplateGroups[SelectedTemplate] as { name, synth, inputSpace, h_global, h_local }, i}
+    {#each $TemplateGroups[SelectedTemplate] as { name, preset, synth, inputSpace, h_global, h_local }, i}
       <label class="erasable canvas {ff}">
-        <input type="radio" bind:group={SelectedPreset} {name} value={i} />
+        <input type="radio" bind:group={SelectedPreset} value={i} />
         <HydraViewer
           {synth}
           data={R.pluck('a', R.fromPairs(inputSpace))}
@@ -280,7 +219,9 @@
               class="thumb unlocked"
               data-store="0"
               data-path="h b"
-              style="left:{W.rescale_index($H_global.toString(), $Bits, $Unlocked.length) * track_w}px"
+              style="left:{W.rescale_index($H_global.toString(), $Bits, $Unlocked.length) *
+                track_w -
+                3}px"
               bind:clientWidth={thumb_w}
             />
           </div>
@@ -294,7 +235,8 @@
               data-store="1"
               data-path="h a"
               class="thumb unlocked"
-              style="left:{W.rescale_index($H_local.toString(), $Bits, $Unlocked.length) * track_w}px"
+              style="left:{W.rescale_index($H_local.toString(), $Bits, $Unlocked.length) * track_w -
+                3}px"
               bind:clientWidth={thumb_w}
             />
           </div>
@@ -303,11 +245,11 @@
       </ul>
     {/if}
     <ul class="sliders">
-      {#each Object.entries($InputSpace) as [key, { a, b, c0, c1, z, locked, display }]}
+      {#each Object.entries($InputSpace) as [key, { a, b, c0, c1, z, locked}]}
         <li class:fixed={locked} class="erasable slider-grid {ff}" data-path={key} data-store="2">
-          <div class:unlocked={!locked} class="param-name " data-store="2" data-path={key}
-            >{display}</div
-          >
+          <div class:unlocked={!locked} class="param-name " data-store="2" data-path={key}>
+            {key.replaceAll('_',' ')}
+          </div>
           <div data-store="2" data-path="{key} c0" class:unlocked={!locked} class="bound c0">
             {c0}
           </div>
@@ -327,7 +269,7 @@
               data-path="{key} a"
               class:unlocked={!locked}
               class="thumb"
-              style="left:{U.scale(c0, c1, 0, track_w, a)}px"
+              style="left:{U.scale(c0, c1, 0, track_w, a) - 3}px"
               bind:clientWidth={thumb_w}
             />
           </div>
@@ -337,11 +279,15 @@
         </li>
       {/each}
     </ul>
-    
   </div>
   <div class="viewport">
-    <!-- <HydraViewer synth={synth1} data={$Inputs} w={1000} h={1000} autoloop={true} /> -->
-    <HydraViewer synth={$TemplateGroups[SelectedTemplate][SelectedPreset].synth} data={$Inputs} w={1000} h={1000} autoloop={true} />
+    <HydraViewer
+      synth={$TemplateGroups[SelectedTemplate][SelectedPreset].synth}
+      data={$Inputs}
+      w={1000}
+      h={1000}
+      autoloop={true}
+    />
   </div>
   <div style="width: 100vw; background: none; position: absolute; z-index: 1000; top:0; left:0">
     <div class:hidden={!hidden} class="palette" style="left:{$palette.x}px; top:{$palette.y}px;">
@@ -354,14 +300,14 @@
     {/each}
   </div>
   <div class="config">
-    <select bind:value={SelectedUI} name="UI Mode">
+    <select bind:value={SelectedUI} name="UI Mode" id="select-ui">
       <option value="hilbert">Hilbert</option>
       <option value="random">Random Walk</option>
       <option value="default">Default</option>
     </select>
-    <select bind:value={SelectedTemplate} name="Presets">
-      {#each examples as { name }, i}
-        <option value={name}>{name}</option>
+    <select bind:value={SelectedTemplate} name="Presets" id="select-template">
+      {#each R.keys($TemplateGroups) as templateName}
+        <option value={templateName}>{templateName}</option>
       {/each}
     </select>
     <button>Export</button>

@@ -7,9 +7,9 @@
 </script>
 
 <!-- <svelte:window bind:innerWidth={vw} bind:innerHeight={vh}/> -->
-<div class="infobox instrument" class:inactive={!equipped} style="top:{$EventStore.y+20}px; left:{$EventStore.x+20}px">
+<!-- <div class="infobox instrument" class:inactive={!equipped} style="top:{$EventStore.y+20}px; left:{$EventStore.x+20}px">
 {name}
-</div>
+</div> -->
 
 <style>
 

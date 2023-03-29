@@ -10,9 +10,9 @@
     //function isMovable = R.filter(val=>val.dataset)
     const dispatch = createEventDispatcher();
     const [A, B, C, Target] = AlignmentStore(
-        { x: 0, y: 0, },
-        { x: 0, y: 0 - 10, },
-        { x: 0, y: 0 - 50, }
+        { x: 0, y: 0 },
+        { x: 0, y: 0 - 10 },
+        { x: 0, y: 0 - 50 }
     );
 
     $: A.set(R.pick(['x', 'y', 'movementX', 'movementY'], $EventStore));
@@ -52,7 +52,12 @@
     }}
 />
 
-<svg class:inactive={!equipped} style="position:absolute; top:0; left:0" width="100vw" height="100vh">
+<svg
+    class:inactive={!equipped}
+    style="position:absolute; top:0; left:0"
+    width="100vw"
+    height="100vh"
+>
     <rect width="100%" height="100%" stroke="red" fill="none" />
     <line x1="{$C.x}px" y1="{$C.y}px" x2="{$A.x}px" y2="{$A.y}px" stroke="black" />
 </svg>
@@ -72,15 +77,14 @@
     style="left:{$C.x}px; top:{$C.y}px; position:fixed;  "
 />
 
-
 <style>
     .round:after {
         position: absolute;
-        top: -3px;
-        left: -3px;
-        width: 6px;
-        height: 6px;
-        border-radius: 3px;
+        top: -4px;
+        left: -4px;
+        width: 8px;
+        height: 8px;
+        border-radius: 6px;
         background-color: white;
     }
     .red:after {

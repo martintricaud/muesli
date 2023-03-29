@@ -437,7 +437,7 @@ canvas {
   display: grid; 
   grid-auto-rows: minmax(10, auto);
   grid-row: auto;
-  grid-template-columns: minmax(12ch, 20%) minmax(3ch, 5ch) minmax(200px, auto)  minmax(3ch, 5ch);
+  grid-template-columns: minmax(13ch, 20%) minmax(3ch, 5ch) minmax(200px, auto)  minmax(3ch, 5ch);
   grid-template-areas: "name c0 val c1";
   gap: 0px 0.5em; 
 }

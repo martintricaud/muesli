@@ -11,10 +11,10 @@ interface Vec {
 }
 
 export let HilbertForward = (p: BigInt, b: number, d: number) => {
-  console.log(W.forward(p.toString(), b, d))
   return W.forward(p.toString(), b, d)
 }
 export let HilbertInverse = (X: Uint32Array, b: number) => BigInt(W.inverse(X, b))
+
 export function ratio(a, b, precision):number{
   return Number(a * BigInt(precision) / b) / precision
 }
@@ -26,9 +26,7 @@ export function prod(a,b,precision){
   else{
     let [numberOperand, bigintOperand] = typeof a === 'bigint' ? [b, a] : [a, b];
     //todo: I need to handle the case where numberOperand*10**precision is larger than MaxNumber
-    let res =  BigInt(Math.round(numberOperand*10**precision))*bigintOperand / BigInt(10**precision)
-    console.log(res)
-    return res
+    return  BigInt(Math.round(numberOperand*10**precision))*bigintOperand / BigInt(10**precision)
   }
 }
 
@@ -37,17 +35,14 @@ export const clamp = R.curry((m, M, x) =>
     W.bigint_clamp(m, M, x) :
     R.clamp(m, M, x))
 
-//export const scale = (a, A, b, B, x, precision = 9) => (x - a) * (B - b) / (A - a);
 
 export const reorder = R.sort((a: any, b) => a - b)
 export const zoom = p => ([m, M]) => [m + Math.min(0.5, p / 2) * (M - m), M - Math.min(0.5, p / 2) * (M - m)]
-//export const lerp = (a, A, b, B, x, f = R.identity) => (f(x) - a) * (B - b) / (A - a) + b
+
 export const scale = (a, A, b, B, x, precision = 9) => {
-  console.log((x - a) / (A - a))
-  console.log(B-b)
   return prod((x - a) / (A - a), B - b, precision);
 }
-export const lerp = (a, A, b, B, x, f = R.identity) => scale(a, A, b, B, f(x)) + b
+export const lerp = R.curry((a, A, b, B, x, f = R.identity) => scale(a, A, b, B, f(x)) + b)
 
 
 
