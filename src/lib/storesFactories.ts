@@ -1,11 +1,8 @@
 import { writable, Writable, get, derived } from "svelte/store";
 import * as R from 'ramda';
 import * as U from './utils';
-import { wasm_functions as W } from '../main.js';
 import { constraintsPreset } from "./constraints";
 import { prng_alea } from 'esm-seedrandom';
-
-
 
 type P<T> = Record<string, T> //record with fields of type t
 interface PresetV{
@@ -126,26 +123,3 @@ export function MuesliStore(data) {
 		MaxH
 	]
 }
-
-export const InputValues = store => derived(store, R.pluck("a"))
-
-export function PresetStore(init: Preset[] | []) {
-	const Presets: Writable<Preset[] | []> = writable(init);
-
-	function addPreset(v: Preset, i: number = 10) {
-		let f = (newVal, id = 10) => (presets: Preset[]) => R.insert(
-			id, { ...{ name: U.assignDefaultName(R.pluck('name', presets)) }, ...newVal, }, presets
-		);
-		Presets.update(f(v, i))
-	}
-	function deletePreset(id: number) {
-		let f = (id: number) => (presets: Preset[]) => R.remove(id, 1, presets)
-		Presets.update(f(id))
-	}
-	function modifyPreset(v: Preset, i: number) {
-		let f = (newValue: Preset, id: number) => (presets: Preset[]) => R.adjust(id, R.mergeLeft(newValue), presets)
-		Presets.update(f(v, i))
-	}
-	return { subscribe: Presets.subscribe, set: Presets.set, update: Presets.update, erase: deletePreset, modify: modifyPreset, add: addPreset }
-}
-

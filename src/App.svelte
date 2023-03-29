@@ -2,7 +2,7 @@
   import { writable, get, derived } from 'svelte/store';
   import { onMount } from 'svelte';
   import { wasm_functions as W } from './main.js';
-  import { MuesliStore, PresetStore, InputValues } from './lib/storesFactories';
+  import { MuesliStore } from './lib/storesFactories';
   import { examples } from './lib/data';
   import * as U from './lib/utils';
   import * as S from './lib/utils-streams';
