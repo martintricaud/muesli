@@ -67,10 +67,8 @@ input::-webkit-inner-spin-button {
 .grid {
   height: calc(100vh - 2em);
   display: grid;
-  /* grid-auto-flow: row; */
   grid-template-rows: 1fr 5fr 94fr;
-  /* grid-template-rows: 1fr 15fr 85fr; */
-  grid-template-columns: minmax(400px, auto) minmax(calc(85vh - 2em), auto);
+  grid-template-columns: max-content auto;
   grid-template-areas:
         "d d"
         "c c"
@@ -92,8 +90,27 @@ input::-webkit-inner-spin-button {
 }
 
 .ui{
-  grid-area:a
+  grid-row-end: a;
+  grid-area:a;
+  display: grid;
+  grid-template-rows: min-content minmax(auto,min-content);
+  grid-template-areas:
+      "macro"
+      "single";
+  height: 100%;
 }
+
+.macro{
+  grid-area: macro
+}
+
+.single{
+  height: min-content;
+  grid-area: single;
+  grid-row-end: single
+}
+
+
 .viewport {
   grid-area: b;
   height: 100%;
@@ -182,15 +199,12 @@ label>input{
 .sliders {
   padding: 0;
   margin: 0;
-  grid-area: a;
-  flex-direction: column;
   overflow-y: scroll;
   overflow-x: scroll;
   margin-bottom: 1rem;
   border: 1px solid black;
   border-radius:3px;
   background-color: #F0F0F0;
-  /* border: 2px solid rgba(0, 0, 212, .4); */
 }
 
 /* .sliders>li {
@@ -363,9 +377,12 @@ canvas {
   background: repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(0,0,0,0.3), rgba(0,0,0,0.3) 5px)
 }
 
+.willFix:active {
+  background: repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(0,0,0,0.5), rgba(0,0,0,0.5) 5px)
+}
 
 .willErase:hover {
-  background: repeating-linear-gradient(45deg, transparent, transparent 4px, red, red 6px);
+  background: repeating-linear-gradient(45deg, transparent, transparent 4px, red, red 5px);
   /* filter: brightness(150%) saturate(70%); */
   box-sizing: content-box;
 }
@@ -423,13 +440,6 @@ canvas {
   left:5px;  */
 }
 
-.slider-row{
-    display: grid; 
-    grid-auto-rows: 1fr; 
-    grid-template-columns: minmax(4em, 20%) 1fr max-content 1fr; 
-    gap: 0px 15px; 
-    grid-template-areas: "name c0 val c1";
-}
 
 .slider-grid{
   padding:0 0.5em;

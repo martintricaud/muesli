@@ -5,12 +5,7 @@ import { constraintsPreset } from "./constraints";
 import { prng_alea } from 'esm-seedrandom';
 
 type P<T> = Record<string, T> //record with fields of type t
-interface PresetV{
-    h_local: string, h_global:string, ranges: Array<[string, Record<string, number|boolean|string>]>, z:number
-}
-interface Preset extends PresetV{
-    name:string
-}
+
 
 let randomForward = axes => _n => R.zipObj(
 	axes,

@@ -201,7 +201,7 @@ export const examples = [{
 	// by Olivia Jack
 	// https://ojack.github.io
 	name: "ojack1",
-	preset: "preset1",
+	preset: 0,
 	inputSpace: [
 		["oscillator_frequency", { c0: 0.0001, c1: 100, a: 1, locked: false }],
 		["oscillator_offset", { c0: 0.0001, c1: 1, a: 1, locked: false }],
@@ -226,10 +226,12 @@ export const examples = [{
 	h_global: U.prod(BigInt(2 ** (32 * 10)), 0.1, 6),
 	h_local: U.prod(BigInt(2 ** (32 * 10)), 0.5, 6),
 }, {
+	// licensed with CC BY-NC-SA 4.0 https://creativecommons.org/licenses/by-nc-sa/4.0/
+	// Puertas III
+	// por Celeste Betancur
 	// https://github.com/essteban
-	author: "Celeste Betancur",
-	name: "Puertas III",
-	preset: "preset1",
+	name: "puertas3",
+	preset: 0,
 	inputSpace: [
 		["oscillator_1_frequency", { c0: 0.0001, c1: 100, a: 1, locked: false }],
 		["oscillator_1_offset", { c0: 0.0001, c1: 1, a: 1, locked: false }],
@@ -239,9 +241,9 @@ export const examples = [{
 		["repeatX", { c0: 0, c1: 20, a: 1, locked: false }],
 		["repeatY", { c0: 0, c1: 20, a: 1, locked: false }],
 		["modulation_amount", { c0: 0.0001, c1: 1, a: 1, locked: false }],
-		["modulatingShapeSides", { c0: 0, c1: 20, a: 1, locked: false }],
-		["modulatingShapeScale", { c0: 0.0001, c1: 10, a: 1, locked: false }],
-		["modulatingShapeFade", { c0: 0, c1: 1, a: 1, locked: false }],
+		["shape_modulation_sides", { c0: 0, c1: 20, a: 1, locked: false }],
+		["shape_modulation_scale", { c0: 0.0001, c1: 10, a: 1, locked: false }],
+		["shape_modulation_fade", { c0: 0, c1: 1, a: 1, locked: false }],
 	],
 	synth: a => x => {
 		return x.osc(a.oscillator_1_frequency, 1 / a.oscillator_1_frequency, a.oscillator_1_offset)
@@ -250,7 +252,7 @@ export const examples = [{
 					.kaleid(a.kaleidoscope_shape))
 			.repeat(a.repeatX, a.repeatY)
 			.modulate(x.o0, a.modulation_amount)
-			.modulateKaleid(x.shape(a.modulatingShapeSides, a.modulatingShapeScale, a.modulatingShapeFade))
+			.modulateKaleid(x.shape(a.shape_modulation_sides, a.shape_modulation_scale, a.shape_modulation_fade))
 			.out(x.o0);
 	},
 	h_global: U.prod(BigInt(2 ** (32 * 10)), 0.1, 6),
@@ -259,9 +261,8 @@ export const examples = [{
 	// licensed with CC BY-NC-SA 4.0 https://creativecommons.org/licenses/by-nc-sa/4.0/
 	// by Olivia Jack
 	// https://ojack.github.io
-	author: "Olivia Jack",
 	name: "ojack2",
-	preset: "preset1",
+	preset: 0,
 	inputSpace: [
 		["oscillator_1_frequency", { c0: 0.0001, c1: 100, a: 1, locked: false }],
 		["oscillator_1_offset", { c0: 0.0001, c1: 1, a: 1, locked: false }],
@@ -293,7 +294,7 @@ export const examples = [{
 			.mult(
 				x.osc(a.oscillator_2_frequency, 1 / a.oscillator_2_frequency, a.oscillator_2_offset)
 				.thresh(a.oscillator_2_threshold)
-				.rotate(a.oscillator_2_rotation_, 0))
+				.rotate(a.oscillator_2_rotation, 0))
 			.modulateRotate(x.osc(a.oscillator_3_frequency, 1 / a.oscillator_3_frequency, a.oscillator_3_offset)
 				.thresh(a.oscillator_3_threshold, a.oscillator_3_threshold_tolerance), a.oscillator_3_modulation_amount)
 			.out(x.o0);
@@ -302,7 +303,7 @@ export const examples = [{
 	h_local: U.prod(BigInt(2 ** (32 * 10)), 0.5, 6),
 },{
 	name: "dualNoiseBW",
-	preset: "preset1",
+	preset: "0",
 	inputSpace:
 		[
 			["frequency", { c0: 0.0001, c1: 100, a: 1, locked: false }],
@@ -371,3 +372,46 @@ export const examples = [{
 // 	.pixelate(1.765, 39.107)
 // 	.modulate(noise(3.111), () => 1.422 * Math.sin(0.076 * time))
 // 	.out(o0);
+
+
+
+// // licensed with CC BY-NC-SA 4.0 https://creativecommons.org/licenses/by-nc-sa/4.0/
+// // by Nelson Vera
+// // twitter: @nel_sonologia
+// osc(9.634, -0.233, 0.782)
+// 	.color(-1.358, -2.921, -2.967)
+// 	.blend(o0)
+// 	.rotate(-0.486, -0.269)
+// 	.modulate(shape(7.614)
+// 		.rotate(0.957, 0.58)
+// 		.scale(3.054)
+// 		.repeatX(1.896, 2.632)
+// 		.modulate(o0, () => mouse.x * 0.001)
+// 		.repeatY(2.093, 2.059))
+// 	.out(o0);
+
+
+
+
+
+// // licensed with CC BY-NC-SA 4.0 https://creativecommons.org/licenses/by-nc-sa/4.0/
+// // 3.3
+// // by ΔNDR0M3DΔ
+// // https://www.instagram.com/androm3_da/
+// osc()
+// 	.modulateRotate(o0, 0.098)
+// 	.out();
+// osc(2.234, 0.102, 0.366)
+// 	.diff(o3, 4.28)
+// 	.out(o1);
+// osc(2.802, 0.352, 38.429)
+// 	.modulateKaleid(o3, 3.426)
+// 	.diff(o0)
+// 	.out(o2);
+// src(o0, 3.316)
+// 	.mult(o1, 1.042)
+// 	.kaleid(2.325)
+// 	.out(o3);
+// render(o2);
+
+

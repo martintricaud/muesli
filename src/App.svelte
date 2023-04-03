@@ -8,29 +8,26 @@
   import * as S from './lib/utils-streams';
   import * as R from 'ramda';
   import HydraViewer from './components/HydraViewer.svelte';
-  import SliderTable from './components/SliderTable.svelte';
   import ICursor from './components/ICursor.svelte';
   import ILever from './components/ILever.svelte';
   import IFix from './components/IFix.svelte';
+  import IEraser from './components/IEraser.svelte';
   import { EventStore, UIOptions } from './lib/UIState';
+  import { RandomGenerator } from '@japan-d2/random-bigint'
 
-  const Templates = writable(examples);
-  const TemplateGroups = derived(Templates, R.groupBy(R.prop('name')));
+const random = new RandomGenerator({
+  seed: BigInt(123456789), // accepts any positive integer
+  limit: BigInt(10) ** BigInt(64) // for example, 64 digits maximum
+})
+
   let SelectedTemplate = 'dualNoiseBW';
   let SelectedPreset = 0;
-  const Active = derived(TemplateGroups, x=>x[SelectedPreset]);
-
-  /**
-   * naming: ff = feedforward
-   * naming: w = width
-   * naming: h = height
-   * naming: ev = event
-   */
-
-  /* naming: BINDINGS FOR DOM ELEMENTS AND THEIR SIZES / STYLE CLASSES */
-
-  const palette = writable({ x: 0, y: 0 });
   let ih, macro_w, track_w, range_w, TRACKOFFSET, hidden, SelectedUI, thumb_w = 6;
+  const Templates = writable(examples);
+  const TemplateGroups = derived(Templates, R.groupBy(R.prop('name')));
+  const Active = derived(TemplateGroups, x=>x[SelectedPreset]);
+  const palette = writable({ x: 0, y: 0 });
+
 
   let instruments = {
     fix: {
@@ -54,21 +51,19 @@
       ff: 'willNone',
       effect: cursor_effect,
     },
-    // eraser: {
-    //   name: 'erase',
-    //   equipped: false,
-    //   component: IEraser,
-    //   ev: U.InitEvent,
-    //   ff: 'willErase',
-    //   effect: erase_effect,
-    // },
+    eraser: {
+      name: 'erase',
+      equipped: false,
+      component: IEraser,
+      ff: 'willErase',
+      effect: erase_effect,
+    },
   };
 
   //reactive value that returns the name of the currently equipped instrument
   $: equipped = R.keys(R.pickBy((x, key) => x.equipped, instruments))[0];
   //reactive value that returns the feedforward style for the selected instrument
   $: ff = instruments[equipped].ff;
-
 
   //DeltaZoom is the zoom factor
   const DeltaZoom = writable(1)
@@ -77,10 +72,7 @@
   );
   $: data = R.toPairs($InputSpace);
 
-  /** EFFECTFUL FUNCTIONS
-   * modify reactive values, can be thought of has handlers
-   *
-   */
+  /** EFFECTFUL FUNCTIONS modify reactive values, can be thought of has handlers */
 
   function cursor_effect(ev) {
     console.log($EventStore);
@@ -96,23 +88,41 @@
   }
 
   function lever_effect(ev) {
+   
     let [key, field] = U.stringToPath(ev.detail.targetPath);
     let lerpTo = U.lerp(TRACKOFFSET, TRACKOFFSET + track_w, R.__, R.__, ev.detail.cursorValue.x);
+    let m = ev.detail.cursorValue.movementX/2
+    if(m>0){
+      console.log(random.next())
+    }
+    else if(m<0){
+      console.log(random.previous)
+    }
+    let lerpTo2 = U.lerp(0, track_w, R.__, R.__,m);
+    // console.log(ev.detail.cursorValue.movementX)
+    // console.log($EventStore)
     if (ev.detail.targetStore == 0) {
-      H_global.set(lerpTo(0n, $MaxH));
+      // console.log(lerpTo2(0n, $MaxH))
+      H_global.update(x=>x+lerpTo(0n, $MaxH));
     } else if (ev.detail.targetStore == 1) {
-      H_local.set(lerpTo(0n, $MaxH));
+      
+      // H_local.update(x=>x+lerpTo2(0n, $MaxH));
+      // H_local.update(x=>U.lerp(0, track_w, 0n, $MaxH, x+ev.detail.cursorValue.movementX));
+      // H_local.set(lerpTo(0n, $MaxH));
     } else if (ev.detail.targetStore == 2) {
-      InputSpace.evolve(U.deepObjOf([key, field], (x) => lerpTo($InputSpace[key].c0, $InputSpace[key].c1)));
+      let f = R.add(U.scale(0, track_w, $InputSpace[key].c0, $InputSpace[key].c1, m));
+      // InputSpace.evolve(U.deepObjOf([key, field], (x) => lerpTo($InputSpace[key].c0, $InputSpace[key].c1)));
+      InputSpace.evolve(U.deepObjOf([key, field],f));
     }
   }
 
-  // function erase_effect(ev) {
-  //   let e = ev.detail;
-  //   e.target.classList.contains('erasable')
-  //     ? muesli?.[e.target.dataset?.store]?.update(R.omit(U.stringToPath(e.target.dataset?.path)))
-  //     : console.log('nothing to erase');
-  // }
+  function erase_effect(ev) {
+    let target = document.elementsFromPoint(ev.detail.x, ev.detail.y).filter(x=>x.tagName == "LABEL")[0].getAttribute("value");
+    let targetIndex = R.findIndex(R.and(R.propEq('preset',target),R.propEq('name',SelectedTemplate)),$Templates)
+    if($Templates.filter(x=>x.name == SelectedTemplate).length>1){
+      Templates.update(R.remove(targetIndex,1))
+    }
+  }
 
   /** HANDLERS
    * modify reactive values, but in a non instrumental way
@@ -144,16 +154,12 @@
   }
 
   function wheel_effect(e) {
-    let curr = R.clamp(
-      1e-6,1,$DeltaZoom + U.scale(0, ih * 100, 1e-6, 1, e.wheelDeltaY)
-    );
-    let f = (x) => (curr / $DeltaZoom) * x;
-    InputSpace.evolve(R.map(R.always(R.objOf('z', f)), $InputSpace));
+    let curr = R.clamp(1e-6,1,$DeltaZoom + U.scale(0, ih * 100, 1e-6, 1, e.wheelDeltaY));
+    InputSpace.evolve(R.map(R.always(R.objOf('z', R.multiply(curr/$DeltaZoom))), $InputSpace));
     DeltaZoom.set(curr);
   }
 
   function feedback(e) {
-    EventStore.set(e);
     instruments[equipped] = R.assoc('ev', e, instruments[equipped]);
   }
 
@@ -177,9 +183,9 @@
     }}
   on:keyup={(ev) => (hidden = ev.key == ' ' ? false : hidden || false)}
   on:mousemove={(ev) => {
-    hidden ? palette.update((x) => x) : ($palette = { x: ev.x, y: ev.y });
+    hidden ? palette.update((x) => x) : ($palette = { x: ev.x, y: ev.y});
     feedback(ev);
-    EventStore.update(R.mergeLeft(R.pick(['movementX', 'movementY'], ev)));
+    EventStore.update(R.mergeLeft(R.pick(['x','y','movementX', 'movementY'], ev)));
   }}
   on:resize={(ev) => {
     //this is ugly but Svelte doesn't have a convenient way to bind to an element's absolute Offset width
@@ -194,10 +200,9 @@
       on:click={() => save_handler()}
       ><u>save</u></button
     >
-
     {#each $TemplateGroups[SelectedTemplate] as { name, preset, synth, inputSpace, h_global, h_local }, i}
-      <label class="erasable canvas {ff}">
-        <input type="radio" bind:group={SelectedPreset} value={i} />
+      <label class="erasable willErase canvas {ff}" value={preset}>
+        <input type="radio" bind:group={SelectedPreset} value={preset} />
         <HydraViewer
           {synth}
           data={R.pluck('a', R.fromPairs(inputSpace))}
@@ -210,7 +215,7 @@
   </div>
   <div class="ui">
     {#if SelectedUI != 'default'}
-      <ul class="sliders ">
+      <ul class="sliders macro ">
         <li class="macro slider-grid">
           <div class="param-name">Global macro</div>
           <div>min</div>
@@ -244,7 +249,7 @@
         </li>
       </ul>
     {/if}
-    <ul class="sliders">
+    <ul class="sliders single">
       {#each Object.entries($InputSpace) as [key, { a, b, c0, c1, z, locked}]}
         <li class:fixed={locked} class="erasable slider-grid {ff}" data-path={key} data-store="2">
           <div class:unlocked={!locked} class="param-name " data-store="2" data-path={key}>

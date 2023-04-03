@@ -53,17 +53,20 @@ export function AlignmentStore(A: Partial<Vec>, B: Partial<Vec>, C: Partial<Vec>
         if ($Click) {
             if ($Shift) {
                 let P1bis = vec.projectXAB(u($P1), $P1, $P3)
-                let foo = vec.norm(vec.sub(P1bis, $P3))<=(vec.norm($P2P3)+0.00001) ? vec.add($P2, vec.setNorm(0.0001,vec.sub($P2,$P3))) : P1bis
+                let foo = vec.norm(vec.sub(P1bis, $P3))<=(vec.norm($P2P3)+1e-5) ? vec.add($P2, vec.setNorm(1e-5,vec.sub($P2,$P3))) : P1bis
                 P1.set(foo)
             }
             else {
-                let deltaY = $P3.y - $K.y
                 P1.update(u)
                 let P2new = Math.abs($P1P3.y)>Math.abs($P2P3.y) ? {
-                    x: $P3.x - $P1P3.x * deltaY*Math.sign(-$P1P3.y) / $P1P3.y,
-                    y: $P3.y + deltaY*Math.sign($P1P3.y)
+                    x: $P3.x - $P1P3.x * ($P3.y - $K.y)*Math.sign(-$P1P3.y) / $P1P3.y,
+                    y: $P3.y + ($P3.y - $K.y)*Math.sign($P1P3.y)
                 } : vec.add($P1, vec.scale(0.01,$P1P3))
-                P2.update(R.mergeLeft(P2new))
+                let delta = {
+                    movementX: vec.sub($P2,P2new,).x,
+                    movementY: vec.sub($P2,P2new).y
+                }
+                P2.update(R.mergeLeft({...P2new,...delta}))
             }
         }
         else {

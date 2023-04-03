@@ -10,9 +10,9 @@
     //function isMovable = R.filter(val=>val.dataset)
     const dispatch = createEventDispatcher();
     const [A, B, C, Target] = AlignmentStore(
-        { x: 0, y: 0 },
-        { x: 0, y: 0 - 10 },
-        { x: 0, y: 0 - 50 }
+        { x: 0, y: 0, movementX: 0, movementY: 0 },
+        { x: 0, y: 0 - 10, movementX: 0, movementY: 0 },
+        { x: 0, y: 0 - 50, movementX: 0, movementY: 0 }
     );
 
     $: A.set(R.pick(['x', 'y', 'movementX', 'movementY'], $EventStore));
@@ -22,6 +22,7 @@
         targetStore: $Target?.dataset?.store,
         cursorValue: $B,
     };
+    // $:console.log($B)
 
     $: if ($Target != undefined) {
         if (equipped) {

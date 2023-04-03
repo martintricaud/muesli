@@ -13,7 +13,6 @@
   - [ ] 26.12.2022 if keys exist in both, old is highlighted in red, new in green
 - [ ] orthozoom
 - [x] ~~stream handlers for edge scrolling~~
-- [ ] polymorphic delete
 - [x] ~~clicking an inactive instrument makes it active and all others inactive, clicking an active instrument makes it inactive~~
 - [x] ~~hilbert arrays store their locked values~~ (shape is ```{v:foo, locked:bar}``` )
 - [x] ~~can hilbert adjunction be reactively parametrized?~~
@@ -38,7 +37,8 @@
   - [ ] if the target is "movable", shift sets O to be equal to target's display center, otherwise 0 = its current value, while preserving the ||OC||/||OA|| ratio
 - [x] ~~22.03.2023 replace implementation of BigInt operations~~
   - [x] ~~rewrite BigIntProd~~
-
+- [ ] polymorphic delete
+- [ ] Random walk mapping
 
 
 
