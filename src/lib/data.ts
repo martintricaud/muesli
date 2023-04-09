@@ -309,9 +309,9 @@ export const examples = [{
 			["frequency", { c0: 0.0001, c1: 100, a: 1, locked: false }],
 			["offset", { c0: 0.0001, c1: 1, a: 1, locked: false  }],
 			["noise_scale", { c0: 1, c1: 10, a: 1, locked: false }],
-			["noise_scale_1", { c0: -10, c1: 10, a: 1, locked: false }],
+			["noise_scale_1", { c0: -10, c1: 10, a: 0, locked: false }],
 			["modulation_amount_1", { c0: 0.0001, c1: 1, a: 1, locked: false }],
-			["modulation_amount_2", { c0: 0.0001, c1: 1, a: 1, locked: false }]
+			["modulation_amount_2", { c0: 0, c1: 1, a: 1, locked: false }]
 		],
 	synth: a => x => {
 		return x.noise(a.noise_scale_1, 1 / a.noise_scale_1)
@@ -332,7 +332,7 @@ export const examples = [{
 		["frequency", { c0: 0.0001, c1: 100, a: 1, locked: false }],
 		["offset", { c0: 0.0001, c1: 1, a: 1, locked: false  }],
 		["noise_scale", { c0: 1, c1: 10, a: 1, locked: false }],
-		["noise_scale_1", { c0: -10, c1: 10, a: 1, locked: false }],
+		["noise_scale_1", { c0: -10, c1: 10, a: 0, locked: false }],
 		["modulation_amount_1", { c0: 0.0001, c1: 1, a: 1, locked: false }],
 		["modulation_amount_2", { c0: 0.0001, c1: 1, a: 1, locked: false }]
 	],

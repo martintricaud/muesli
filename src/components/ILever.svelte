@@ -1,34 +1,42 @@
 <script>
     import { createEventDispatcher } from 'svelte';
     import * as R from 'ramda';
-    import { AlignmentStore } from '../lib/LeverStore';
+    import { AlignmentStore } from '../lib/storesFactories';
     import { EventStore } from '../lib/UIState';
     import { onMount } from 'svelte';
     export let ev, name, equipped;
+    import * as vec from '../lib/vec'
 
     //dispatcher that will make the instrument "observable"
     //function isMovable = R.filter(val=>val.dataset)
     const dispatch = createEventDispatcher();
-    const [A, B, C, Target] = AlignmentStore(
+    const [P1, P2, P3, Target] = AlignmentStore(
         { x: 0, y: 0, movementX: 0, movementY: 0 },
-        { x: 0, y: 0 - 10, movementX: 0, movementY: 0 },
+        { x: 0, y: 0 - 10, movementX: 0, movementY: 0, mXPrev: 0 },
         { x: 0, y: 0 - 50, movementX: 0, movementY: 0 }
     );
 
-    $: A.set(R.pick(['x', 'y', 'movementX', 'movementY'], $EventStore));
+    $: P1.set(R.pick(['x', 'y', 'movementX', 'movementY'], $EventStore));
+
+    // $: speedGain = $EventStore.movementX == 0 ? 1 : $P2.movementX / $EventStore.movementX
+    // $: posGain = vec.norm(vec.sub($P3,$P1)) == 0 ? 1 : vec.norm(vec.sub($P3,$P2))/vec.norm(vec.sub($P3,$P1))
+    // $: xGain = vec.sub($P3,$P1).x == 0 ? 1 : Math.abs(vec.sub($P3,$P2).x/vec.sub($P3,$P1).x)
 
     $: effectValue = {
         targetPath: $Target?.dataset?.path,
         targetStore: $Target?.dataset?.store,
-        cursorValue: $B,
+        cursorValue: $P2,
+        // posGain: posGain,
+        // speedGain: speedGain,
+        // xGain: xGain
     };
-    // $:console.log($B)
+
 
     $: if ($Target != undefined) {
         if (equipped) {
-            dispatch('effect', R.mergeRight(ev, effectValue));
+            dispatch('effect', R.mergeRight($EventStore, effectValue));
         } else {
-            dispatch('effect', R.mergeRight(ev, effectValue));
+            dispatch('effect', R.mergeRight($EventStore, effectValue));
         }
     }
     onMount(() => {});
@@ -36,46 +44,46 @@
 
 <svelte:window
     on:mousedown={(ev) => {
-        B.set(true);
+        P2.set(true);
     }}
     on:mouseup={(ev) => {
-        B.set(false);
+        P2.set(false);
     }}
     on:keydown={(ev) => {
         if (ev.shiftKey) {
-            C.set(true);
+            P3.set(true);
         }
     }}
     on:keyup={(ev) => {
         if (!ev.shiftKey) {
-            C.set(false);
+            P3.set(false);
         }
     }}
 />
 
-<svg
+<!-- <svg
     class:inactive={!equipped}
     style="position:absolute; top:0; left:0"
     width="100vw"
     height="100vh"
 >
     <rect width="100%" height="100%" stroke="red" fill="none" />
-    <line x1="{$C.x}px" y1="{$C.y}px" x2="{$A.x}px" y2="{$A.y}px" stroke="black" />
-</svg>
+    <line x1="{$P3.x}px" y1="{$P3.y}px" x2="{$P1.x}px" y2="{$P1.y}px" stroke="black" />
+</svg> -->
 <div
     class:inactive={!equipped}
     class="round red"
-    style="left:{$A.x}px; top:{$A.y}px; position:fixed; "
+    style="left:{$P1.x}px; top:{$P1.y}px; position:fixed; "
 />
 <div
     class:inactive={!equipped}
     class="round green"
-    style="left:{$B.x}px; top:{$B.y}px; position:fixed; "
+    style="left:{$P2.x}px; top:{$P2.y}px; position:fixed; "
 />
 <div
     class:inactive={!equipped}
     class="round blue"
-    style="left:{$C.x}px; top:{$C.y}px; position:fixed;  "
+    style="left:{$P3.x}px; top:{$P3.y}px; position:fixed;  "
 />
 
 <style>
@@ -89,15 +97,15 @@
         background-color: white;
     }
     .red:after {
-        content: 'A';
+        content: 'P1';
         border: 1px solid black;
     }
     .green:after {
-        content: 'B';
+        content: 'P2';
         border: 1px solid black;
     }
     .blue:after {
-        content: 'C';
+        content: 'P3';
         border: 1px solid black;
     }
 </style>

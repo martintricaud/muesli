@@ -2,7 +2,8 @@ import * as R from 'ramda'
 import * as U from './utils';
 interface Vec {
     x: number,
-    y: number
+    y: number,
+    z: number
 }
 
 export const scale = R.curry((K, B: Partial<Vec>) => U.evolve({ x: x => x * K, y: y => y * K }, B))
@@ -13,7 +14,13 @@ export const setNorm = (K: number, B: Partial<Vec>) => scale(K, unit(B))
 export const add = (B: Partial<Vec>, A: Partial<Vec>) => U.evolve({ x: x => x + B.x, y: y => y + B.y }, A)
 export const sub = (B: Partial<Vec>, A: Partial<Vec>) => U.evolve({ x: x => x - B.x, y: y => y - B.y }, A)
 export const unit = (B: Partial<Vec>) => scale(1 / norm(B), B)
-
+export const cross = (A: Partial<Vec>, B: Partial<Vec>) => {
+    return {
+        x: A.y * B.z - A.z * B.y,
+        y: A.z * B.x - A.x * B.z,
+        z: A.x * B.y - A.y * B.y
+    }
+}
 export const project = R.curry((B, A) => scale(dot(A,B)/norm(B), B))
 export const projectXAB = (X, A, B) => add(A,
     scale(dot(sub(A, X), sub(A, B)) / (norm(sub(A, B))),unit(sub(A, B))))

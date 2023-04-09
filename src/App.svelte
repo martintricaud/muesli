@@ -14,6 +14,7 @@
   import IEraser from './components/IEraser.svelte';
   import { EventStore, UIOptions } from './lib/UIState';
   import { RandomGenerator } from '@japan-d2/random-bigint'
+  import { constraintsPreset } from "./lib/constraints";
 
 const random = new RandomGenerator({
   seed: BigInt(123456789), // accepts any positive integer
@@ -22,7 +23,7 @@ const random = new RandomGenerator({
 
   let SelectedTemplate = 'dualNoiseBW';
   let SelectedPreset = 0;
-  let ih, macro_w, track_w, range_w, TRACKOFFSET, hidden, SelectedUI, thumb_w = 6;
+  let ih, iw, macro_w, track_w, range_w, TRACKOFFSET, hidden, SelectedUI, thumb_w = 6;
   const Templates = writable(examples);
   const TemplateGroups = derived(Templates, R.groupBy(R.prop('name')));
   const Active = derived(TemplateGroups, x=>x[SelectedPreset]);
@@ -75,7 +76,7 @@ const random = new RandomGenerator({
   /** EFFECTFUL FUNCTIONS modify reactive values, can be thought of has handlers */
 
   function cursor_effect(ev) {
-    console.log($EventStore);
+    console.log(ev);
   }
 
   function fix_effect(ev) {
@@ -88,19 +89,17 @@ const random = new RandomGenerator({
   }
 
   function lever_effect(ev) {
-   
     let [key, field] = U.stringToPath(ev.detail.targetPath);
     let lerpTo = U.lerp(TRACKOFFSET, TRACKOFFSET + track_w, R.__, R.__, ev.detail.cursorValue.x);
-    let m = ev.detail.cursorValue.movementX/2
-    if(m>0){
-      console.log(random.next())
-    }
-    else if(m<0){
-      console.log(random.previous)
-    }
+    let a= ev.detail.cursorValue.x - TRACKOFFSET
+    let m = ev.detail.cursorValue.movementX
+    // let m = $EventStore.movementX
+    // let m = ev.detail.cursorValue.mXPrev
+    // let sg = ev.detail.speedGain
+    // let pg = ev.detail.posGain
+    // let xg = ev.detail.xGain
     let lerpTo2 = U.lerp(0, track_w, R.__, R.__,m);
-    // console.log(ev.detail.cursorValue.movementX)
-    // console.log($EventStore)
+
     if (ev.detail.targetStore == 0) {
       // console.log(lerpTo2(0n, $MaxH))
       H_global.update(x=>x+lerpTo(0n, $MaxH));
@@ -110,11 +109,36 @@ const random = new RandomGenerator({
       // H_local.update(x=>U.lerp(0, track_w, 0n, $MaxH, x+ev.detail.cursorValue.movementX));
       // H_local.set(lerpTo(0n, $MaxH));
     } else if (ev.detail.targetStore == 2) {
-      let f = R.add(U.scale(0, track_w, $InputSpace[key].c0, $InputSpace[key].c1, m));
+      let c0c1 = $InputSpace[key].c1 - $InputSpace[key].c0
+      let computeRes = val => c0c1*val/track_w + $InputSpace[key].c0
+      // console.log("a "+a)
+
+      let A = $InputSpace[key].a
+      let M = c0c1*m/track_w
+      // console.log(A+M)
+    
+
+      // console.log("c0c1 "+c0c1)
+      // console.log("w0w1 "+track_w)
+      console.log("m "+m)
+      console.log("M "+M)
+      console.log(key+" "+field)
+
+      // console.log((20*x/254)-10 )
+      // console.log("speed "+($InputSpace[key].c1 - $InputSpace[key].c0)*m/(track_w))
+     
+     
+      let f0 = x=> x+ M
+      let f = x => (x + M)
       // InputSpace.evolve(U.deepObjOf([key, field], (x) => lerpTo($InputSpace[key].c0, $InputSpace[key].c1)));
-      InputSpace.evolve(U.deepObjOf([key, field],f));
+      console.log($InputSpace[key].a + M)
+      InputSpace.evolve(U.deepObjOf([key, field], x=>x+M))
+      console.log($InputSpace[key].a)
+
+    
     }
   }
+
 
   function erase_effect(ev) {
     let target = document.elementsFromPoint(ev.detail.x, ev.detail.y).filter(x=>x.tagName == "LABEL")[0].getAttribute("value");
@@ -168,12 +192,13 @@ const random = new RandomGenerator({
     S.mousedown_.thru(S.obs(feedback));
     S.drag_.thru(S.obs(feedback));
     S.asr(S.capture($DeltaZoom, S.shiftdown_), S.mousewheel_, S.shiftup_).thru(S.obs(wheel_effect));
-    TRACKOFFSET = document.getElementsByClassName('track2')[0].getBoundingClientRect().left;
+    TRACKOFFSET = document.getElementsByClassName('track')[0].getBoundingClientRect().left;
   });
 </script>
 
 <svelte:window
   bind:innerHeight={ih}
+  bind:innerWidth={iw}
   on:keydown={(ev) => UIOptions.update(R.assoc('noscroll', ev.shiftKey))}
   on:keyup={(ev) => UIOptions.update(R.assoc('noscroll', ev.shiftKey))}
   on:keydown={(ev) => {
@@ -189,7 +214,7 @@ const random = new RandomGenerator({
   }}
   on:resize={(ev) => {
     //this is ugly but Svelte doesn't have a convenient way to bind to an element's absolute Offset width
-    let val = document.getElementsByClassName('track2')[0].getBoundingClientRect().left;
+    let val = document.getElementsByClassName('track')[0].getBoundingClientRect().left;
     TRACKOFFSET = val;
   }}
 />
@@ -219,7 +244,7 @@ const random = new RandomGenerator({
         <li class="macro slider-grid">
           <div class="param-name">Global macro</div>
           <div>min</div>
-          <div class="track" bind:clientWidth={macro_w}>
+          <div class="track" bind:clientWidth={track_w}>
             <div
               class="thumb unlocked"
               data-store="0"
@@ -235,7 +260,7 @@ const random = new RandomGenerator({
         <li class="macro slider-grid">
           <div class="param-name">Local macro</div>
           <div>min</div>
-          <div class="track">
+          <div class="track" bind:clientWidth={track_w}>
             <div
               data-store="1"
               data-path="h a"
@@ -258,7 +283,7 @@ const random = new RandomGenerator({
           <div data-store="2" data-path="{key} c0" class:unlocked={!locked} class="bound c0">
             {c0}
           </div>
-          <div data-path={key} class="track track2" bind:clientWidth={track_w}>
+          <div data-path={key} class="track" bind:clientWidth={track_w}>
             <div
               data-store="2"
               data-path="{key} b"
@@ -274,7 +299,7 @@ const random = new RandomGenerator({
               data-path="{key} a"
               class:unlocked={!locked}
               class="thumb"
-              style="left:{U.scale(c0, c1, 0, track_w, a) - 3}px"
+              style="left:{track_w*(a-c0)/(c1-c0)}px"
               bind:clientWidth={thumb_w}
             />
           </div>

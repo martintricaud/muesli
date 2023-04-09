@@ -27,8 +27,7 @@ export const reorder = R.sort((a: any, b) => a - b)
 export const zoom = p => ([m, M]) => [m + Math.min(0.5, p / 2) * (M - m), M - Math.min(0.5, p / 2) * (M - m)]
 export const scale = (a, A, b, B, x, precision = 9) => prod((x - a) / (A - a), B - b, precision);
 export const lerp = R.curry((a, A, b, B, x, f = R.identity) => scale(a, A, b, B, f(x)) + b)
-
-
+export const lerp2 = (a, A, b, B, x) => (x - a) * (B - b ) / (A - a) + b
 
 //! bad code coverage
 

@@ -349,6 +349,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@japan-d2/random-bigint@npm:^0.0.5":
+  version: 0.0.5
+  resolution: "@japan-d2/random-bigint@npm:0.0.5"
+  checksum: 4870b08f0b2436b7f24da15695df1050ec1d49a1c6cb88b8ae28930f532e3082fa017fb65e69acd9b4469e4e4469c36b2e311c7cf4fdae5eb5e74f6cc4631dff
+  languageName: node
+  linkType: hard
+
 "@lezer/common@npm:^1.0.0":
   version: 1.0.2
   resolution: "@lezer/common@npm:1.0.2"
@@ -1451,6 +1458,7 @@ __metadata:
     "@codemirror/state": ^0.17.1
     "@codemirror/theme-one-dark": ^0.17.4
     "@codemirror/view": ^0.17.7
+    "@japan-d2/random-bigint": ^0.0.5
     "@sveltejs/vite-plugin-svelte": ^1.0.2
     "@types/kefir": ^3.8.7
     esm-seedrandom: ^3.0.5
