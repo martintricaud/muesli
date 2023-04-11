@@ -136,9 +136,9 @@ export const synth2 = a => x =>
 export const preset1 = [
 	["frequency", { c0: 0.0001, c1: 100, a: 20, locked: false, display: "frequency" }],
 	["offset", { c0: 0.0001, c1: 1, a: 0.5, locked: false, display: "offset" }],
-	["noise_scale", { c0: 1, c1: 10, a: 5, locked: false, display: "noise scale" }],
+	["noise_scale", { c0: 0.1, c1: 10, a: 5, locked: false, display: "noise scale" }],
 	// ["noiseOffset", { c0: 0.0001, c1: 1, locked:false }],
-	["noise_scale_1", { c0: -10, c1: 10, a: 5, locked: false, display: "noise scale 1" }],
+	["noise_scale_1", { c0: 0.1, c1: 10, a: 5, locked: false, display: "noise scale 1" }],
 	// ["noiseOffset1", { c0: 0.0001, c1: 1, locked:false }],
 	["modulation_amount_1", { c0: 0.0001, c1: 1, a: 0.5, locked: false, display: "modulation amount" }],
 	["modulation_amount_2", { c0: 0.0001, c1: 1, a: 0.5, locked: false, display: "modulation amount 2" }]]
@@ -308,8 +308,8 @@ export const examples = [{
 		[
 			["frequency", { c0: 0.0001, c1: 100, a: 1, locked: false }],
 			["offset", { c0: 0.0001, c1: 1, a: 1, locked: false  }],
-			["noise_scale", { c0: 1, c1: 10, a: 1, locked: false }],
-			["noise_scale_1", { c0: -10, c1: 10, a: 0, locked: false }],
+			["noise_scale", { c0: 0.1, c1: 10, a: 1, locked: false }],
+			["noise_scale_1", { c0: 0.1, c1: 10, a: 1, locked: false }],
 			["modulation_amount_1", { c0: 0.0001, c1: 1, a: 1, locked: false }],
 			["modulation_amount_2", { c0: 0, c1: 1, a: 1, locked: false }]
 		],
