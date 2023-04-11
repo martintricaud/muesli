@@ -56,7 +56,6 @@ input[type=number] {
   cursor: pointer;
   transition: border-color 0.25s;
   user-select: text;
-  -moz-appearance: textfield;
 }
 
 input::-webkit-outer-spin-button,
