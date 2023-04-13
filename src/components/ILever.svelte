@@ -10,25 +10,22 @@
     //dispatcher that will make the instrument "observable"
     //function isMovable = R.filter(val=>val.dataset)
     const dispatch = createEventDispatcher();
+
+    /** Initialize a lever made of three points with alignment constraints */
     const [P1, P2, P3, Target] = AlignmentStore(
         { x: 0, y: 0, movementX: 0, movementY: 0 },
         { x: 0, y: 0 - 10, movementX: 0, movementY: 0, mXPrev: 0 },
         { x: 0, y: 0 - 50, movementX: 0, movementY: 0 }
     );
 
+    /** P1 is constrained by the main EventStore, i.e. it is updated at every movement of the mouse*/
     $: P1.set(R.pick(['x', 'y', 'movementX', 'movementY'], $EventStore));
 
-    // $: speedGain = $EventStore.movementX == 0 ? 1 : $P2.movementX / $EventStore.movementX
-    // $: posGain = vec.norm(vec.sub($P3,$P1)) == 0 ? 1 : vec.norm(vec.sub($P3,$P2))/vec.norm(vec.sub($P3,$P1))
-    // $: xGain = vec.sub($P3,$P1).x == 0 ? 1 : Math.abs(vec.sub($P3,$P2).x/vec.sub($P3,$P1).x)
-
     $: effectValue = {
-        targetPath: $Target?.dataset?.path,
-        targetStore: $Target?.dataset?.store,
-        cursorValue: $P2,
-        // posGain: posGain,
-        // speedGain: speedGain,
-        // xGain: xGain
+        targetPath: $Target?.elem?.dataset?.path,
+        targetStore: $Target?.elem?.dataset?.store,
+        offset: $Target?.offset,
+        P2: $P2,
     };
 
 

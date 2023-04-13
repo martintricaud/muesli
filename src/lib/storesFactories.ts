@@ -170,7 +170,12 @@ export function AlignmentStore(A: Partial<Vec>, B: Partial<Vec>, C: Partial<Vec>
         let res = targetList.length > 0 ? targetList[0] : undefined;
 
         /** set TargetStore to res on mouseDown, and to undefined on mouseUp */ 
-        value ? Target.set(res) : Target.set(undefined)
+        value ? Target.set({elem:res,offset:{
+			offsetX: $P2.x-res.getBoundingClientRect().x-res.getBoundingClientRect().width/2,
+			offsetY: $P2.y-res.getBoundingClientRect().y-res.getBoundingClientRect().height/2,
+		}}) : Target.set(undefined)
+
+		/** set Click to true on mouseDown, and to false on mouseUp */ 
         Click.set(value)
         K.set($P2)
         
@@ -207,14 +212,11 @@ export function AlignmentStore(A: Partial<Vec>, B: Partial<Vec>, C: Partial<Vec>
                 let P2new = Math.abs($P1P3.y)-0.01>Math.abs($P3.y-$K.y) ? {
                     x: intersectionPos.x + $P2.movementX,
                     y: intersectionPos.y + $P2.movementY,
-                    mXPrev: $P2.movementX,
                     movementX: intersectionMov.movementX,
-                    movementY: 0
+                    movementY: 0,
                 } : vec.add($P1, vec.scale(0.01,$P1P3))
             
-                P2.update(R.mergeLeft(P2new))
-
-                
+                P2.update(R.mergeLeft(P2new))   
             }
         }
         else {
@@ -241,4 +243,3 @@ export function AlignmentStore(A: Partial<Vec>, B: Partial<Vec>, C: Partial<Vec>
         { subscribe: Target.subscribe }
     ]
 }
-

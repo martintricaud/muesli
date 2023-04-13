@@ -306,7 +306,7 @@ export const examples = [{
 	preset: "0",
 	inputSpace:
 		[
-			["frequency", { c0: 0.0001, c1: 100, a: 1, locked: false }],
+			["frequency", { c0: 0.0001, c1: 1000, a: 1, locked: false }],
 			["offset", { c0: 0.0001, c1: 1, a: 1, locked: false  }],
 			["noise_scale", { c0: 0.1, c1: 10, a: 1, locked: false }],
 			["noise_scale_1", { c0: 0.1, c1: 10, a: 1, locked: false }],

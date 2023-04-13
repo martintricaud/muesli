@@ -23,7 +23,7 @@ const random = new RandomGenerator({
 
   let SelectedTemplate = 'dualNoiseBW';
   let SelectedPreset = 0;
-  let ih, iw, macro_w, track_w, range_w, TRACKOFFSET, hidden, SelectedUI, thumb_w = 6;
+  let ih, iw, macro_w, track_w, range_w, trackOffsetX, hidden, SelectedUI, thumb_w = 6;
   const Templates = writable(examples);
   const TemplateGroups = derived(Templates, R.groupBy(R.prop('name')));
   const Active = derived(TemplateGroups, x=>x[SelectedPreset]);
@@ -89,53 +89,15 @@ const random = new RandomGenerator({
   }
 
   function lever_effect(ev) {
+    let [P2,offset] = [ev.detail.P2, ev.detail.offset]
     let [key, field] = U.stringToPath(ev.detail.targetPath);
-    let lerpTo = U.lerp(TRACKOFFSET, TRACKOFFSET + track_w, R.__, R.__, ev.detail.cursorValue.x);
-    let a= ev.detail.cursorValue.x - TRACKOFFSET
-    let m = ev.detail.cursorValue.movementX
-    // let m = $EventStore.movementX
-    // let m = ev.detail.cursorValue.mXPrev
-    // let sg = ev.detail.speedGain
-    // let pg = ev.detail.posGain
-    // let xg = ev.detail.xGain
-    let lerpTo2 = U.lerp(0, track_w, R.__, R.__,m);
-
+    let lerpTo = U.lerp(trackOffsetX, trackOffsetX + track_w, R.__, R.__,P2.x-offset.offsetX);
     if (ev.detail.targetStore == 0) {
-      // console.log(lerpTo2(0n, $MaxH))
       H_global.update(x=>x+lerpTo(0n, $MaxH));
     } else if (ev.detail.targetStore == 1) {
-      
-      // H_local.update(x=>x+lerpTo2(0n, $MaxH));
-      // H_local.update(x=>U.lerp(0, track_w, 0n, $MaxH, x+ev.detail.cursorValue.movementX));
-      // H_local.set(lerpTo(0n, $MaxH));
+      H_local.set(lerpTo(0n, $MaxH));
     } else if (ev.detail.targetStore == 2) {
-      let c0c1 = $InputSpace[key].c1 - $InputSpace[key].c0
-      let computeRes = val => c0c1*val/track_w + $InputSpace[key].c0
-      // console.log("a "+a)
-
-      let A = $InputSpace[key].a
-      let M = c0c1*m/track_w
-      // console.log(A+M)
-    
-
-      // console.log("c0c1 "+c0c1)
-      // console.log("w0w1 "+track_w)
-      console.log("m "+m)
-      console.log("M "+M)
-      console.log(key+" "+field)
-
-      // console.log((20*x/254)-10 )
-      // console.log("speed "+($InputSpace[key].c1 - $InputSpace[key].c0)*m/(track_w))
-     
-     
-      let f0 = x=> x+ M
-      let f = x => (x + M)
-      // InputSpace.evolve(U.deepObjOf([key, field], (x) => lerpTo($InputSpace[key].c0, $InputSpace[key].c1)));
-      console.log($InputSpace[key].a + M)
-      InputSpace.evolve(U.deepObjOf([key, field], x=>x+M))
-      console.log($InputSpace[key].a)
-
-    
+      InputSpace.evolve(U.deepObjOf([key, field], (x) => lerpTo($InputSpace[key].c0, $InputSpace[key].c1)));   
     }
   }
 
@@ -192,7 +154,7 @@ const random = new RandomGenerator({
     S.mousedown_.thru(S.obs(feedback));
     S.drag_.thru(S.obs(feedback));
     S.asr(S.capture($DeltaZoom, S.shiftdown_), S.mousewheel_, S.shiftup_).thru(S.obs(wheel_effect));
-    TRACKOFFSET = document.getElementsByClassName('track')[0].getBoundingClientRect().left;
+    trackOffsetX = document.getElementsByClassName('track')[0].getBoundingClientRect().left;
   });
 </script>
 
@@ -215,7 +177,7 @@ const random = new RandomGenerator({
   on:resize={(ev) => {
     //this is ugly but Svelte doesn't have a convenient way to bind to an element's absolute Offset width
     let val = document.getElementsByClassName('track')[0].getBoundingClientRect().left;
-    TRACKOFFSET = val;
+    trackOffsetX = val;
   }}
 />
 <main class="grid" id="main">
@@ -299,7 +261,7 @@ const random = new RandomGenerator({
               data-path="{key} a"
               class:unlocked={!locked}
               class="thumb"
-              style="left:{track_w*(a-c0)/(c1-c0)}px"
+              style="left:{100*(a-c0)/(c1-c0)}%"
               bind:clientWidth={thumb_w}
             />
           </div>
