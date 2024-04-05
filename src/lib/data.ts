@@ -123,7 +123,7 @@ export const synth2 = a => x =>
 //     ["rotate", { c0: 0, c1: 1, locked:false }], //offset
 //     ["shapeScale", { c0: 0.1, c1: 10, locked:false }], //offset
 //     ["voronoi", { c0: 1, c1: 20, locked:false }], //offset
-//     ["repeatX", { c0: 1, c1: 20, locked:false }], //offset
+//     ["repeatX", { c0: 1, c1: 20, ]]]]]]]]]]]]]]]]]]]]]]]]]locked:false }], //offset
 //     ["repeatY", { c0: 1, c1: 20, locked:false }], //offset
 //     ["shiftRed", { c0: 0, c1: 1, locked:false }], //offset
 //     ["shiftBlue", { c0: 0, c1: 1, locked:false }], //offset
@@ -200,8 +200,8 @@ export const examples = [{
 	// licensed with CC BY-NC-SA 4.0 https://creativecommons.org/licenses/by-nc-sa/4.0/
 	// by Olivia Jack
 	// https://ojack.github.io
-	name: "ojack1",
-	preset: 0,
+	templateName: "Ojack 1",
+	presetName: "preset0",
 	inputSpace: [
 		["oscillator_frequency", { c0: 0.0001, c1: 100, a: 1, locked: false }],
 		["oscillator_offset", { c0: 0.0001, c1: 1, a: 1, locked: false }],
@@ -230,16 +230,16 @@ export const examples = [{
 	// Puertas III
 	// por Celeste Betancur
 	// https://github.com/essteban
-	name: "puertas3",
-	preset: 0,
+	templateName: "Puertas III",
+	presetName: "preset0",
 	inputSpace: [
 		["oscillator_1_frequency", { c0: 0.0001, c1: 100, a: 1, locked: false }],
 		["oscillator_1_offset", { c0: 0.0001, c1: 1, a: 1, locked: false }],
 		["oscillator_2_frequency", { c0: 0.0001, c1: 100, a: 1, locked: false }],
 		["oscillator_2_offset", { c0: 0.0001, c1: 1, a: 1, locked: false }],
 		["kaleidoscope_shape", { c0: 1, c1: 20, a: 1, locked: false }],
-		["repeatX", { c0: 0, c1: 20, a: 1, locked: false }],
-		["repeatY", { c0: 0, c1: 20, a: 1, locked: false }],
+		["repeatX", { c0: 0, c1: 5, a: 1, locked: false }],
+		["repeatY", { c0: 0, c1: 5, a: 1, locked: false }],
 		["modulation_amount", { c0: 0.0001, c1: 1, a: 1, locked: false }],
 		["shape_modulation_sides", { c0: 0, c1: 20, a: 1, locked: false }],
 		["shape_modulation_scale", { c0: 0.0001, c1: 10, a: 1, locked: false }],
@@ -261,8 +261,8 @@ export const examples = [{
 	// licensed with CC BY-NC-SA 4.0 https://creativecommons.org/licenses/by-nc-sa/4.0/
 	// by Olivia Jack
 	// https://ojack.github.io
-	name: "ojack2",
-	preset: 0,
+	templateName: "Ojack 2",
+	presetName: "preset0",
 	inputSpace: [
 		["oscillator_1_frequency", { c0: 0.0001, c1: 100, a: 1, locked: false }],
 		["oscillator_1_offset", { c0: 0.0001, c1: 1, a: 1, locked: false }],
@@ -302,8 +302,8 @@ export const examples = [{
 	h_global: U.prod(BigInt(2 ** (32 * 10)), 0.1, 6),
 	h_local: U.prod(BigInt(2 ** (32 * 10)), 0.5, 6),
 },{
-	name: "dualNoiseBW",
-	preset: "0",
+	templateName: "Grayscale Noise",
+	presetName: "preset0",
 	inputSpace:
 		[
 			["frequency", { c0: 0.0001, c1: 1000, a: 1, locked: false }],
@@ -326,8 +326,8 @@ export const examples = [{
 	h_local: U.prod(BigInt(2 ** (32 * 10)), 0.5, 6),
 },{
 	author: "Asdrúbal Gomez",
-	name:"",
-	preset:"",
+	templateName:"Asdrubal",
+	presetName:"preset0",
 	inputSpace:[
 		["frequency", { c0: 0.0001, c1: 100, a: 1, locked: false }],
 		["offset", { c0: 0.0001, c1: 1, a: 1, locked: false  }],

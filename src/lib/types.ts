@@ -5,9 +5,18 @@ export interface Preset extends PresetV{
     name:string
 }
 
-type num = number
-type num2 = [num,num]
-type str = string
-type Rec<T> = Record<str, T> //record with fields of type t
+type Rec<T> = Record<string, T> //record with fields of type t
 
-export type {num, num2, str, Rec}
+type MuesliParameter = {
+	a: number,
+	b: number,
+	c0: number,
+	c1: number,
+	z: number, 
+	locked: boolean
+}
+type Endo<T> = (x: T) => T;
+type Evolver<T> = {
+    [Property in keyof T]: Endo<T[Property]>;
+};
+export type {Rec, MuesliParameter, Endo, Evolver}

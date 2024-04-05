@@ -2,7 +2,6 @@ import { writable, Writable, get, derived } from "svelte/store";
 import * as R from 'ramda';
 import * as U from './utils';
 import { constraintsPreset } from "./constraints";
-import { prng_alea } from 'esm-seedrandom';
 import * as vec from './vec'
 import { EventStore } from "./UIState";
 
@@ -20,7 +19,6 @@ interface Vec {
 
 type P<T> = Record<string, T> //record with fields of type t
 
-
 let randomForward = axes => _n => R.zipObj(
 	axes,
 	axes.map(
@@ -30,7 +28,7 @@ let randomForward = axes => _n => R.zipObj(
 )
 
 
-export function liftedConstraintStore(ranges: Array<[string, P<any>]>, _epsilon: number = 0.01) {
+export function liftedConstraintStore(ranges: Array<[string, P<any>]>, _epsilon: number = 0.01):[any,Writable<string[]>] {
 	//compute a default value for a parameter if the required attributes aren't all specified
 	function computeDefault(p) {
 		let r = p;
@@ -63,7 +61,7 @@ export function liftedConstraintStore(ranges: Array<[string, P<any>]>, _epsilon:
 
 export function MuesliStore(data) {
 	// B = bits per dimensions, P = parameters, K = Keys, HF = Hilbert Forward, HR = Hilbert Reverse
-	const [Params, Keys] = liftedConstraintStore(data.inputSpace)
+	const [Params, Keys]:[any, Writable<string[]>] = liftedConstraintStore(data.inputSpace)
 	const Bits: Writable<number> = writable(32)
 	const Unlocked = derived([Keys,Params],([$K, $P])=>R.reject((x:string)=>R.prop('locked',$P[x]),$K))
 	const MaxH = derived([Unlocked,Bits],([$U, $B])=>BigInt(2**($U.length*$B)-1))
@@ -133,113 +131,91 @@ export function MuesliStore(data) {
 	]
 }
 
-export function AlignmentStore(A: Partial<Vec>, B: Partial<Vec>, C: Partial<Vec>) {
-    const [P1, P2, P3] = [writable(A), writable(B), writable(C)]
-    const K = writable(B)
+export function AlignmentStore(P1: Partial<Vec>, P2: Partial<Vec>, P3: Partial<Vec>) {
+    const [A, B, C] = [writable(P1), writable(P2), writable(P3)]
+    const K = writable(P2)
     const [Shift, Click] = [writable(false), writable(false)]
-    const [P1P2, P1P3, P2P3] = [
-        derived([P1, P2], ([a, b]) => vec.sub(a, b)),
-        derived([P1, P3], ([a, b]) => vec.sub(a, b)),
-        derived([P2, P3], ([a, b]) => vec.sub(a, b))]
+    const [AB, AC, BC] = [
+        derived([A, B], ([a, b]) => vec.sub(a, b)),
+        derived([A, C], ([a, c]) => vec.sub(a, c)),
+        derived([B, C], ([b, c]) => vec.sub(b, c))]
     const Target = writable(undefined)
-	const Rot = derived([P1,P3],([p1,p3])=>{return {
-		z: p1.movementX / (p1.y - p3.y)
-	}})
-
-    let $Shift, $Click, $P1, $P2, $P3, $P1P2, $P1P3, $P2P3, $Target, $K, $Rot
+    let $Shift, $Click, $A, $B, $C, $AB, $AC, $BC, $Target, $K
 
     Shift.subscribe(x => { $Shift = x })
     Click.subscribe(x => { $Click = x })
-    P1.subscribe(x => { $P1 = x })
-    P2.subscribe(x => { $P2 = x })
-    P3.subscribe(x => { $P3 = x })
-    P1P2.subscribe(x => { $P1P2 = x })
-    P1P3.subscribe(x => { $P1P3 = x })
-    P2P3.subscribe(x => { $P2P3 = x })
+    A.subscribe(x => { $A = x })
+    B.subscribe(x => { $B = x })
+    C.subscribe(x => { $C = x })
+    AB.subscribe(x => { $AB = x })
+    AC.subscribe(x => { $AC = x })
+    BC.subscribe(x => { $BC = x })
     Target.subscribe(x => { $Target = x })
     K.subscribe(x => { $K = x })
-	Rot.subscribe(x => { $Rot = x })
-
     function ClickSet(value: boolean) {
-        /** retrieve the list of movable elements at P2's position */
+        /** retrieve the list of movable elements at B's position */
         let targetList = document
-            .elementsFromPoint($P2.x, $P2.y)
+            .elementsFromPoint($B.x, $B.y)
             .filter(x => x.classList.contains('thumb') || x.classList.contains('range'))
 
+		// let targetList = U.targetAcquisition(document)($B.x, $B.y,x=>U.containsAny(x.classList,["thumb","range"]))
         /** set target to undefined if targetList is empty */ 
         let res = targetList.length > 0 ? targetList[0] : undefined;
+		let rect = res?.getBoundingClientRect()
 
         /** set TargetStore to res on mouseDown, and to undefined on mouseUp */ 
         value ? Target.set({elem:res,offset:{
-			offsetX: $P2.x-res.getBoundingClientRect().x-res.getBoundingClientRect().width/2,
-			offsetY: $P2.y-res.getBoundingClientRect().y-res.getBoundingClientRect().height/2,
+			offsetX: $B.x-rect?.x-rect?.width/2,
+			offsetY: $B.y-rect?.y-rect?.height/2,
 		}}) : Target.set(undefined)
 
 		/** set Click to true on mouseDown, and to false on mouseUp */ 
         Click.set(value)
-        K.set($P2)
+        K.set($B)
         
     }
-    function P1Set(v: any) {
-        P1Update(R.mergeLeft(v))
+    function ASet(v: any) {
+        AUpdate(R.mergeLeft(v))
     }
 
-    function P1Update(u) {
+	
+    function AUpdate(u) {
         if ($Click) {
             if ($Shift) {
-                let P1bis = vec.projectXAB(u($P1), $P1, $P3)
-                let foo = vec.norm(vec.sub(P1bis, $P3))<=(vec.norm($P2P3)+1e-5) ? vec.add($P2, vec.setNorm(1e-5,vec.sub($P2,$P3))) : P1bis
-                P1.set(foo)
+				A.set(vec.projectXAB(u($A), $A, $C))
             }
             else {
-                /** movementX is the difference between the current position and the previous position */
-                P1.update(u)
-				let vP = (P:Partial<Vec>, Rotation) => {return {
-					movementX: Rotation.z*(P.y-$P3.y),
-					movementY: -Rotation.z*($P3.x-P.x),
-				}}
-                /** Slope of the line P1P3 */
-                let slope = $P1P3.y/$P1P3.x
-                /** Offset of the line P1P3 */
-                let offset = $P3.y - $P3.x*$P1P3.y/$P1P3.x
-                /** the x coordinate of the intersection between y = $K.y and P1P3 equals ($K.y - offset/slope) */
-                let intersectionPos = {
-                    x: ($K.y - offset)/slope,
-                    y: $K.y, 
-                }
-                let intersectionMov =  vP(intersectionPos, $Rot)
-
-                let P2new = Math.abs($P1P3.y)-0.01>Math.abs($P3.y-$K.y) ? {
-                    x: intersectionPos.x + $P2.movementX,
-                    y: intersectionPos.y + $P2.movementY,
-                    movementX: intersectionMov.movementX,
-                    movementY: 0,
-                } : vec.add($P1, vec.scale(0.01,$P1P3))
-            
-                P2.update(R.mergeLeft(P2new))   
+                A.update(u)
+				console.log($B.movementX)
+				let Bnew = Math.abs($AC.y)-0.01>Math.abs($C.y-$K.y) ? {
+                    x: ($K.y - $C.y)*$AC.x/$AC.y + $C.x,
+                    y: $K.y
+                } : vec.add($A, vec.scale(0.01,$AC))
+                B.update(R.mergeLeft(Bnew))   
             }
         }
         else {
             if ($Shift) {
-                let u3 = $P1P3
-                P1.update(u)
-                let newP3 = vec.norm($P1P2)>=vec.norm(u3) + 0.01? vec.add($P2,vec.setNorm(0.01,$P1P2)) :
-                vec.add($P1,vec.setNorm(vec.norm(u3),$P1P2))
-                P3.set(newP3)
+				let u3 = $AC
+                A.update(u)
+                let newC = vec.norm($AB)>=vec.norm($AC) + 0.01? vec.add($B,vec.setNorm(0.01,$AB)) :
+                vec.add($A,vec.setNorm(vec.norm(u3),$AB))
+                C.set(newC)
             }
             else {
-                let [u2, u3] = [$P1P2, $P1P3]
-                P1.update(u)
-                P2.set(vec.add($P1, u2))
-                P3.set(vec.add($P1, u3))
+                let [u2, u3] = [$AB, $AC]
+                A.update(u)
+                B.set(vec.add($A, u2))
+                C.set(vec.add($A, u3))
             }
         }
     }
 
     return [
-        { subscribe: P1.subscribe, set: P1Set, update: P1Update },
-        { subscribe: P2.subscribe, set: ClickSet },
-        { subscribe: P3.subscribe, set: Shift.set },
+        { subscribe: A.subscribe, set: ASet, update: AUpdate },
+        { subscribe: B.subscribe, set: ClickSet },
+        { subscribe: C.subscribe, set: Shift.set },
         { subscribe: Target.subscribe }
     ]
 }
+

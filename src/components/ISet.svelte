@@ -1,10 +1,11 @@
 <script>
     import { afterUpdate, createEventDispatcher } from 'svelte';
+    import { EventStore } from '../lib/UIState';
     import * as R from 'ramda';
-    export let ev, name, equipped;
+    export let name, equipped;
     let val;
     const dispatch = createEventDispatcher();
-    $: dispatchDetails = R.assoc('setterValue',val,ev)
+    $: dispatchDetails = R.assoc('setterValue',val,$EventStore)
     afterUpdate(() => {
         equipped
             ? document.getElementById('setter').focus()
@@ -17,7 +18,7 @@
 
     on:click={(e) => equipped ? dispatch('effect', dispatchDetails):e}
 />
-<div class="infobox instrument" class:inactive={!equipped} style="top:{ev.y + 10}px; left:{ev.x + 10}px">
+<div class="infobox instrument" class:inactive={!equipped} style="top:{$EventStore.y + 10}px; left:{$EventStore.x + 10}px">
     <div>set to</div>
     <span>val &#9654 </span><input id="setter" class:focused={equipped} type="number"  bind:value={val}/>
 </div>

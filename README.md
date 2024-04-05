@@ -24,7 +24,7 @@ The "Global" macro-slider controls the center coordinates of a sub-region of the
 The conceptual model is built around the principles of "instrumental interaction", i.e. user actions are mediated by the "instrument" that is currently equipped.
 To bring up the instrument Palette, hold space bar and select the desired option.
 An instrument is essentially a transfer function that maps UIEvents to Store updates.
-The update triggered by an "instrumented" action might be ignored or amended if an object's state is constrained in a way that conflicts with the attempted update.  
+The update triggered by an "instrumented" action might be ignored or amended if an object's state is constrained in a way that conflicts with the attempted update.  ]]]]]]]]]]]]]]]]]]]]]]]]]]]
 
 Currently implemented instruments are
 * Fix (fixing an element makes it hermetic to updates until it has been unfixed)

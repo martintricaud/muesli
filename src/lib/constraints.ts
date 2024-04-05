@@ -4,7 +4,6 @@ let e = 0.000001
 export const constraintsPreset = [
 	{
 		predicate: obj => obj.c1 - obj.c0 >= e,
-		// udpate to apply to the object for an incoming f update 
 		g: (f,v) => {
 			return {
 				c0: x => f.c1(x - e / 2) - e / 2,

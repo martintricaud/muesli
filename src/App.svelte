@@ -12,25 +12,44 @@
   import ILever from './components/ILever.svelte';
   import IFix from './components/IFix.svelte';
   import IEraser from './components/IEraser.svelte';
+  import IZoom from './components/IZoom.svelte';
   import { EventStore, UIOptions } from './lib/UIState';
-  import { RandomGenerator } from '@japan-d2/random-bigint'
-  import { constraintsPreset } from "./lib/constraints";
+  import { RandomGenerator } from '@japan-d2/random-bigint';
+  import { constraintsPreset } from './lib/constraints';
 
-const random = new RandomGenerator({
-  seed: BigInt(123456789), // accepts any positive integer
-  limit: BigInt(10) ** BigInt(64) // for example, 64 digits maximum
-})
+  const random = new RandomGenerator({
+    seed: BigInt(123456789), // accepts any positive integer
+    limit: BigInt(10) ** BigInt(64), // for example, 64 digits maximum
+  });
 
-  let SelectedTemplate = 'dualNoiseBW';
-  let SelectedPreset = 0;
-  let ih, iw, macro_w, track_w, range_w, trackOffsetX, hidden, SelectedUI, thumb_w = 6;
+  /** Initialize a store containing the example presets*/
   const Templates = writable(examples);
-  const TemplateGroups = derived(Templates, R.groupBy(R.prop('name')));
-  const Active = derived(TemplateGroups, x=>x[SelectedPreset]);
+  /** Derived store where examples are grouped by template for convenience*/
+  const TemplateGroups = derived(Templates, R.groupBy(R.prop('templateName')));
+  let SelectedTemplate = 'Grayscale Noise';
+  /** By default, the selected example is the first that matches the selected template's name*/
+  let SelectedExample = R.findIndex(R.propEq('templateName', SelectedTemplate), $Templates);
+
+  let ih,
+    iw,
+    macro_w,
+    track_w,
+    range_w,
+    trackOffsetX,
+    hidden,
+    SelectedUI,
+    thumb_w = 6;
+
   const palette = writable({ x: 0, y: 0 });
 
-
   let instruments = {
+    cursor: {
+      name: 'none',
+      equipped: true,
+      component: ICursor,
+      ff: 'willNone',
+      effect: cursor_effect,
+    },
     fix: {
       name: 'fix',
       equipped: false,
@@ -45,13 +64,6 @@ const random = new RandomGenerator({
       ff: 'willNone',
       effect: lever_effect,
     },
-    cursor: {
-      name: 'none',
-      equipped: true,
-      component: ICursor,
-      ff: 'willNone',
-      effect: cursor_effect,
-    },
     eraser: {
       name: 'erase',
       equipped: false,
@@ -59,17 +71,25 @@ const random = new RandomGenerator({
       ff: 'willErase',
       effect: erase_effect,
     },
+    zoom: {
+      name: 'zoom',
+      equipped: false,
+      component: IZoom,
+      ff: '',
+      effect: wheel_effect,
+    },
   };
 
-  //reactive value that returns the name of the currently equipped instrument
+  /** reactive value that returns the name of the currently equipped instrument */
   $: equipped = R.keys(R.pickBy((x, key) => x.equipped, instruments))[0];
-  //reactive value that returns the feedforward style for the selected instrument
+  /** reactive value that returns the feedforward style for the selected instrument */
   $: ff = instruments[equipped].ff;
 
   //DeltaZoom is the zoom factor
-  const DeltaZoom = writable(1)
+  const DeltaZoom = writable(1);
+  const WheelDeltaY = writable(1);
   $: [H_global, H_local, InputSpace, Bits, Unlocked, Inputs, MaxH] = MuesliStore(
-    $TemplateGroups[SelectedTemplate][SelectedPreset]
+    $Templates[SelectedExample]
   );
   $: data = R.toPairs($InputSpace);
 
@@ -89,41 +109,61 @@ const random = new RandomGenerator({
   }
 
   function lever_effect(ev) {
-    let [P2,offset] = [ev.detail.P2, ev.detail.offset]
+    let [P2, offset] = [ev.detail.P2, ev.detail.offset];
     let [key, field] = U.stringToPath(ev.detail.targetPath);
-    let lerpTo = U.lerp(trackOffsetX, trackOffsetX + track_w, R.__, R.__,P2.x-offset.offsetX);
+    /** partial evaluation of the curried lerp function, where only the arguments representing the target range remain exposed */
+    let lerpTo = U.lerp(trackOffsetX, trackOffsetX + track_w, R.__, R.__, P2.x - offset.offsetX);
     if (ev.detail.targetStore == 0) {
-      H_global.update(x=>x+lerpTo(0n, $MaxH));
+      H_global.set(lerpTo(0n, $MaxH));
     } else if (ev.detail.targetStore == 1) {
       H_local.set(lerpTo(0n, $MaxH));
     } else if (ev.detail.targetStore == 2) {
-      InputSpace.evolve(U.deepObjOf([key, field], (x) => lerpTo($InputSpace[key].c0, $InputSpace[key].c1)));   
+      InputSpace.evolve(
+        U.deepObjOf([key, field], (x) => lerpTo($InputSpace[key].c0, $InputSpace[key].c1))
+      );
     }
   }
 
-
-  function erase_effect(ev) {
-    let target = document.elementsFromPoint(ev.detail.x, ev.detail.y).filter(x=>x.tagName == "LABEL")[0].getAttribute("value");
-    let targetIndex = R.findIndex(R.and(R.propEq('preset',target),R.propEq('name',SelectedTemplate)),$Templates)
-    if($Templates.filter(x=>x.name == SelectedTemplate).length>1){
-      Templates.update(R.remove(targetIndex,1))
+  function erase_target(target) {
+    if ($TemplateGroups[SelectedTemplate].length > 1) {
+      if (target < SelectedExample) {
+        Templates.update(R.remove(target, 1));
+        SelectedExample += -1;
+      } else if (target > SelectedExample) {
+        Templates.update(R.remove(target, 1));
+      } else if (target == SelectedExample) {
+        SelectedExample = target - 1;
+        erase_target(target);
+      }
     }
+  }
+  function erase_effect(ev) {
+    /** get the target of the eraser from the dom*/
+    let target = document
+      .elementsFromPoint(ev.detail.x, ev.detail.y)
+      .filter((x) => x.tagName == 'LABEL')[0]
+      .getAttribute('value');
+    erase_target(target);
   }
 
   /** HANDLERS
    * modify reactive values, but in a non instrumental way
    */
   function save_handler() {
+    /** creates a new preset whose name is unique for the given template. */
+    let presetName = U.assignDefaultName(R.pluck('presetName', $TemplateGroups[SelectedTemplate]));
     let toAdd = {
-      name: SelectedTemplate,
-      preset: SelectedPreset,
+      templateName: SelectedTemplate,
+      presetName: presetName,
       inputSpace: R.toPairs($InputSpace),
       h_local: $H_local,
       h_global: $H_global,
-      synth: $TemplateGroups[SelectedTemplate][SelectedPreset].synth,
+      synth: $Templates[SelectedExample].synth,
     };
-    console.log(R.toPairs($InputSpace))
-    Templates.update(R.insert(-1,toAdd))
+    /** Add the new example at the end of the Template array store */
+    Templates.update(R.insert(-1, toAdd));
+    /** Shift the focus of SelectedExample to the newly saved preset*/
+    SelectedExample = R.findLastIndex(R.propEq('templateName', SelectedTemplate), $Templates);
   }
 
   function equip_effect(name) {
@@ -133,27 +173,56 @@ const random = new RandomGenerator({
     );
   }
 
-  function load_handler(i) {
-    H_global.set($TemplateGroups[SelectedTemplate][SelectedPreset].h_global);
-    H_local.set($TemplateGroups[SelectedTemplate][SelectedPreset].h_local);
-    InputSpace.set($TemplateGroups[SelectedTemplate][SelectedPreset].inputSpace)
-  }
+  function wheel_effect(ev) {
+    console.log(ev);
+    /** Retrieve all elements located "beneath" the pointer */
+    let targetList = document
+      .elementsFromPoint(ev.x, ev.y)
+      .filter((x) => x.hasAttribute("data-path"));
+    /** Consider the target of the effect to be the top-most element */
+    let target = targetList[0]??""
+    const [targetKey, field] = U.stringToPath(target?.dataset?.path ?? '');
+    console.log(targetKey)
+    let curr = R.clamp(-1, 1, U.lerp(0, ih, 1e-6, 1, -ev.wheelDeltaY));
+    // console.log(curr);
+    // InputSpace.evolve(R.map(R.always(R.objOf('z', (x) => x + curr * x)), $InputSpace));
 
-  function wheel_effect(e) {
-    let curr = R.clamp(1e-6,1,$DeltaZoom + U.scale(0, ih * 100, 1e-6, 1, e.wheelDeltaY));
-    InputSpace.evolve(R.map(R.always(R.objOf('z', R.multiply(curr/$DeltaZoom))), $InputSpace));
-    DeltaZoom.set(curr);
-  }
 
+ 
+    // InputSpace.evolve(
+    //   R.mapObjIndexed(
+    //     (value,key,obj)=>U.deepObjOf([key,"z"], x => x + curr * (obj.c1 - obj.c0)),
+    //     $InputSpace
+    //   )
+    // )
+  
+    InputSpace.evolve(
+      R.map(
+        val=>R.objOf("z", x => x + R.tap(U.printX, curr * (val.c1 - val.c0))),
+        R.pickBy((val,key)=>key===targetKey,$InputSpace)
+      )
+    )
+
+    // InputSpace.evolve(
+    //   U.deepObjOf([key, "z"], (x) => x => x + curr * ($InputSpace[key].c1 - $InputSpace[key].c0))
+    // );
+    // console.log(R.mapObjIndexed(
+    //     (value,key,obj)=>U.deepObjOf([key,"z"], x => x + curr * (obj.c1 - obj.c0)),
+    //     $InputSpace
+    //   ))
+    WheelDeltaY.set(curr);
+
+  }
+  
   function feedback(e) {
     instruments[equipped] = R.assoc('ev', e, instruments[equipped]);
   }
 
   onMount(() => {
     S.mousemove_.thru(S.obs(feedback));
-    S.mousedown_.thru(S.obs(feedback));
-    S.drag_.thru(S.obs(feedback));
-    S.asr(S.capture($DeltaZoom, S.shiftdown_), S.mousewheel_, S.shiftup_).thru(S.obs(wheel_effect));
+    //S.mousedown_.thru(S.obs(feedback));
+    //S.drag_.thru(S.obs(feedback));
+    //S.asr(S.capture($DeltaZoom, S.shiftdown_), S.mousewheel_, S.shiftup_).thru(S.obs(wheel_effect));
     trackOffsetX = document.getElementsByClassName('track')[0].getBoundingClientRect().left;
   });
 </script>
@@ -161,35 +230,38 @@ const random = new RandomGenerator({
 <svelte:window
   bind:innerHeight={ih}
   bind:innerWidth={iw}
-  on:keydown={(ev) => UIOptions.update(R.assoc('noscroll', ev.shiftKey))}
-  on:keyup={(ev) => UIOptions.update(R.assoc('noscroll', ev.shiftKey))}
+  on:keydown={(ev) => UIOptions.update(R.assoc('noscroll', ev.altKey))}
+  on:keyup={(ev) => UIOptions.update(R.assoc('noscroll', ev.altKey))}
   on:keydown={(ev) => {
     hidden = ev.key == ' ' ? true : hidden && true;
-    document.getElementById("select-ui").blur()
-    document.getElementById("select-template").blur()
-    }}
-  on:keyup={(ev) => (hidden = ev.key == ' ' ? false : hidden || false)}
+    /** No choice but to blur some DOM elements to avoid triggering default DOM handlers. */
+    document.getElementById('select-ui').blur();
+    document.getElementById('select-template').blur();
+  }}
+  on:keyup={(ev) => {
+    hidden = ev.key == ' ' ? false : hidden || false;
+    document.getElementById('save').blur();
+  }}
   on:mousemove={(ev) => {
-    hidden ? palette.update((x) => x) : ($palette = { x: ev.x, y: ev.y});
-    feedback(ev);
-    EventStore.update(R.mergeLeft(R.pick(['x','y','movementX', 'movementY'], ev)));
+    /** Make the instrument palette follows the cursor when hidden */
+    hidden ? palette.update((x) => x) : ($palette = { x: ev.x, y: ev.y });
+    // feedback(ev);
+    EventStore.update(R.mergeLeft(R.pick(['x', 'y', 'movementX', 'movementY'], ev)));
   }}
   on:resize={(ev) => {
-    //this is ugly but Svelte doesn't have a convenient way to bind to an element's absolute Offset width
+    /** this is ugly but Svelte doesn't have a convenient way to bind to an element's absolute Offset width */
     let val = document.getElementsByClassName('track')[0].getBoundingClientRect().left;
     trackOffsetX = val;
   }}
+  on:wheel={(ev) => wheel_effect(ev)}
 />
 <main class="grid" id="main">
   <div class="snapshots">
-    <button
-      data-path=""
-      on:click={() => save_handler()}
-      ><u>save</u></button
-    >
-    {#each $TemplateGroups[SelectedTemplate] as { name, preset, synth, inputSpace, h_global, h_local }, i}
-      <label class="erasable willErase canvas {ff}" value={preset}>
-        <input type="radio" bind:group={SelectedPreset} value={preset} />
+    <button id="save" data-path="" on:click={() => save_handler()}><u>save</u></button>
+    {#each $Templates as { templateName, presetName, synth, inputSpace, h_global, h_local }, i}
+      <label class:hidden={templateName != SelectedTemplate} class="erasable canvas {ff}" value={i}>
+        <input type="radio" bind:group={SelectedExample} value={i} />
+        <span>{presetName}</span>
         <HydraViewer
           {synth}
           data={R.pluck('a', R.fromPairs(inputSpace))}
@@ -202,15 +274,16 @@ const random = new RandomGenerator({
   </div>
   <div class="ui">
     {#if SelectedUI != 'default'}
-      <ul class="sliders macro ">
+      <ul class="sliders macro">
         <li class="macro slider-grid">
           <div class="param-name">Global macro</div>
           <div>min</div>
           <div class="track" bind:clientWidth={track_w}>
             <div
-              class="thumb unlocked"
+              class="unlocked thumb"
               data-store="0"
               data-path="h b"
+              data-test
               style="left:{W.rescale_index($H_global.toString(), $Bits, $Unlocked.length) *
                 track_w -
                 3}px"
@@ -226,7 +299,7 @@ const random = new RandomGenerator({
             <div
               data-store="1"
               data-path="h a"
-              class="thumb unlocked"
+              class="unlocked thumb"
               style="left:{W.rescale_index($H_local.toString(), $Bits, $Unlocked.length) * track_w -
                 3}px"
               bind:clientWidth={thumb_w}
@@ -237,10 +310,10 @@ const random = new RandomGenerator({
       </ul>
     {/if}
     <ul class="sliders single">
-      {#each Object.entries($InputSpace) as [key, { a, b, c0, c1, z, locked}]}
+      {#each Object.entries($InputSpace) as [key, { a, b, c0, c1, z, locked }]}
         <li class:fixed={locked} class="erasable slider-grid {ff}" data-path={key} data-store="2">
-          <div class:unlocked={!locked} class="param-name " data-store="2" data-path={key}>
-            {key.replaceAll('_',' ')}
+          <div class:unlocked={!locked} class="param-name" data-store="2" data-path={key}>
+            {key.replaceAll('_', ' ')}
           </div>
           <div data-store="2" data-path="{key} c0" class:unlocked={!locked} class="bound c0">
             {c0}
@@ -261,7 +334,7 @@ const random = new RandomGenerator({
               data-path="{key} a"
               class:unlocked={!locked}
               class="thumb"
-              style="left:{100*(a-c0)/(c1-c0)}%"
+              style="left: calc({(100 * (a - c0)) / (c1 - c0)}% - 5px)"
               bind:clientWidth={thumb_w}
             />
           </div>
@@ -274,7 +347,7 @@ const random = new RandomGenerator({
   </div>
   <div class="viewport">
     <HydraViewer
-      synth={$TemplateGroups[SelectedTemplate][SelectedPreset].synth}
+      synth={$Templates[SelectedExample].synth}
       data={$Inputs}
       w={1000}
       h={1000}
@@ -297,8 +370,14 @@ const random = new RandomGenerator({
       <option value="random">Random Walk</option>
       <option value="default">Default</option>
     </select>
-    <select bind:value={SelectedTemplate} name="Presets" id="select-template">
-      {#each R.keys($TemplateGroups) as templateName}
+    <select
+      bind:value={SelectedTemplate}
+      on:change={() =>
+        (SelectedExample = R.findIndex(R.propEq('templateName', SelectedTemplate), $Templates))}
+      name="Presets"
+      id="select-template"
+    >
+      {#each R.uniq(R.pluck('templateName', $Templates)) as templateName}
         <option value={templateName}>{templateName}</option>
       {/each}
     </select>

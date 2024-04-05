@@ -6,7 +6,6 @@ type R<T> = Record<string, T>
 export const HilbertForward = (p: BigInt, b: number, d: number) => W.forward(p.toString(), b, d)
 export const HilbertInverse = (X: Uint32Array, b: number) => BigInt(W.inverse(X, b))
 
-
 export function ratio(a, b, precision):number{
   return Number(a * BigInt(precision) / b) / precision
 }
@@ -27,7 +26,6 @@ export const reorder = R.sort((a: any, b) => a - b)
 export const zoom = p => ([m, M]) => [m + Math.min(0.5, p / 2) * (M - m), M - Math.min(0.5, p / 2) * (M - m)]
 export const scale = (a, A, b, B, x, precision = 9) => prod((x - a) / (A - a), B - b, precision);
 export const lerp = R.curry((a, A, b, B, x, f = R.identity) => scale(a, A, b, B, f(x)) + b)
-export const lerp2 = (a, A, b, B, x) => (x - a) * (B - b ) / (A - a) + b
 
 //! bad code coverage
 
@@ -55,6 +53,8 @@ export function assignDefaultName(arr: string[]): string {
   // Return the default preset name with the chosen suffix
   return "preset" + suffix;
 }
+
+export const printX = x => console.log('x is ' + x);
 
 let galois_pullBack = (adj) => (f) => (x) => adj[1](f(adj[0](x)))
 
@@ -130,6 +130,7 @@ export function evolve(transformations, object) {
   return result;
 }
 
+
 export const constrainEvolver = (obj, evolver, predicate, g) =>
   R.cond([
     [predicate, R.always(evolver)],
@@ -152,3 +153,8 @@ export const solve = R.curry(
 export const liftSolve = R.curry((solver, F, X) => {
   return R.evolve(mergePartialWith(solver, F, X), X)
 })
+
+// function that takes two lists listA and listB and returns true if listA contains at least one element of listB
+export const containsAny = (listA, listB) => R.any(R.flip(R.includes)(listA), listB);
+
+export const targetAcquisition = context => (pointX,pointY,conditions) => context.elementsFromPoint(pointX,pointY).filter(conditions)

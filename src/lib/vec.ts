@@ -18,14 +18,13 @@ export const cross = (A: Partial<Vec>, B: Partial<Vec>) => {
     return {
         x: A.y * B.z - A.z * B.y,
         y: A.z * B.x - A.x * B.z,
-        z: A.x * B.y - A.y * B.y
+        z: A.x * B.y - A.y * B.x
     }
 }
 export const project = R.curry((B, A) => scale(dot(A,B)/norm(B), B))
 export const projectXAB = (X, A, B) => add(A,
     scale(dot(sub(A, X), sub(A, B)) / (norm(sub(A, B))),unit(sub(A, B))))
 
-   
 //flip B around A
 export const flip = R.curry((A, B) => {
     return {

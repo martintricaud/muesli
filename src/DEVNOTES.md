@@ -32,11 +32,14 @@
   - [x] ~~update non existing key~~
   - [x] ~~update existing key~~
   - [x] ~~update zoom factor~~
-- [ ] 01.03.2023
-  - [ ] if the target is "movable", click sets O to be equal to target's display center, otherwise 0 = its current value. ||OC|| is preserved, and C is made static
-  - [ ] if the target is "movable", shift sets O to be equal to target's display center, otherwise 0 = its current value, while preserving the ||OC||/||OA|| ratio
+- [x] ~~01.03.2023~~
+  - [x] ~~if the target is "movable", click sets O to be equal to target's display center, otherwise 0 = its current value. ||OC|| is preserved, and C is made static~~
+  - [x] ~~if the target is "movable", shift sets O to be equal to target's display center, otherwise 0 = its current value, while preserving the ||OC||/||OA|| ratio~~
 - [x] ~~22.03.2023 replace implementation of BigInt operations~~
   - [x] ~~rewrite BigIntProd~~
 - [x] ~~polymorphic delete~~
 - [ ] Random walk mapping
+- [x] ~~Fix bug (can't erase the current preset)~~
+
+
 
